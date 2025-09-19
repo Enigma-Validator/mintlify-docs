@@ -6,8 +6,8 @@
     "version": "1.0.0"
   },
   "servers": [
-    { "url": "https://api-eu.yourdomain.com", "description": "EU region" },
-    { "url": "https://api-jp.yourdomain.com", "description": "JP region" }
+    { "url": "https://api-eu.hypedexer.com", "description": "EU region" },
+    { "url": "https://api-jp.hypedexer.com", "description": "JP region" }
   ],
   "tags": [
     { "name": "System" },
