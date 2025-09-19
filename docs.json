@@ -87,20 +87,25 @@
     ],
     "global": {
       "anchors": [
+        { 
+          "anchor": "Twitter",  
+          "href": "https://x.com/hypedexer",  
+          "icon": "x" 
+        }, 
         {
-          "anchor": "EU API",
-          "href": "https://api-eu.hypedexer.com",
-          "icon": "globe"
-        },
-        {
-          "anchor": "JP API",
-          "href": "https://api-jp.hypedexer.com",
-          "icon": "globe"
-        },
-        {
-          "anchor": "Status",
-          "href": "https://status.hypedexer.com",
-          "icon": "activity"
+          "anchor": "Discord",  
+          "href": "https://discord.com/invite/cbKncMeZ52", 
+          "icon": "discord"
+        }, 
+        { 
+          "anchor": "Telegram",
+          "href": "https://t.me/hypedexer",
+          "icon": "telegram" 
+        }, 
+        { 
+          "anchor": "Email",  
+          "href": "mailto:contact@hypedexer.com",
+          "icon": "mail" 
         }
       ]
     }
