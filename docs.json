@@ -88,6 +88,11 @@
     "global": {
       "anchors": [
         { 
+          "anchor": "Documentation",
+          "href": "https://docs.hypedexer.com/",
+          "icon": "newspaper" 
+        }, 
+        { 
           "anchor": "Twitter",  
           "href": "https://x.com/hypedexer",  
           "icon": "x" 
@@ -105,7 +110,7 @@
         { 
           "anchor": "Email",  
           "href": "mailto:contact@hypedexer.com",
-          "icon": "mail" 
+          "icon": "envelope" 
         }
       ]
     }
