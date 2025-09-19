@@ -17,32 +17,26 @@
             "group": "Getting started",
             "pages": [
               "index",
-              "quickstart",
-              "development"
+              "guides/authentication-and-api-keys",
+              "guides/environments-and-regions-eu-jp",
+              "guides/base-urls-and-versioning"
             ]
           },
           {
-            "group": "Customization",
+            "group": "Usage & limits",
             "pages": [
-              "essentials/settings",
-              "essentials/navigation"
+              "guides/rate-limits-and-quotas",
+              "guides/pagination-filters-and-sorting",
+              "guides/errors",
+              "guides/performance-best-practices"
             ]
           },
           {
-            "group": "Writing content",
+            "group": "Business",
             "pages": [
-              "essentials/markdown",
-              "essentials/code",
-              "essentials/images",
-              "essentials/reusable-snippets"
-            ]
-          },
-          {
-            "group": "AI tools",
-            "pages": [
-              "ai-tools/cursor",
-              "ai-tools/claude-code",
-              "ai-tools/windsurf"
+              "guides/pricing",
+              "guides/changelog",
+              "guides/faq"
             ]
           }
         ]
@@ -53,26 +47,39 @@
           {
             "group": "API documentation",
             "pages": [
-              "api-reference/introduction"
+              "api/introduction",
+              "api/generate-api-key",
+              "api/notation",
+              "api/tables"
             ]
           },
           {
-            "group": "REST API",
-            "openapi": "api-reference/openapi.json"
+            "group": "REST API — Live data",
+            "openapi": "api-reference/openapi-live.yaml"
+          },
+          {
+            "group": "REST API — Historical",
+            "openapi": "api-reference/openapi-historical.json" 
           },
           {
             "group": "WebSocket",
             "pages": [
-              "api-reference/websocket/overview"
+              "websocket/overview",
+              "websocket/endpoints"
             ]
           },
           {
-            "group": "Endpoint examples",
+            "group": "Spot",
             "pages": [
-              "api-reference/endpoint/get",
-              "api-reference/endpoint/create",
-              "api-reference/endpoint/delete",
-              "api-reference/endpoint/webhook"
+              "api/spot/overview",
+              "api/spot/endpoints"
+            ]
+          },
+          {
+            "group": "Perp",
+            "pages": [
+              "api/perp/overview",
+              "api/perp/endpoints"
             ]
           }
         ]
@@ -81,19 +88,19 @@
     "global": {
       "anchors": [
         {
-          "anchor": "Documentation",
-          "href": "https://mintlify.com/docs",
-          "icon": "book-open-cover"
+          "anchor": "EU API",
+          "href": "https://api-eu.hypedexer.com",
+          "icon": "globe"
         },
         {
-          "anchor": "Community",
-          "href": "https://mintlify.com/community",
-          "icon": "slack"
+          "anchor": "JP API",
+          "href": "https://api-jp.hypedexer.com",
+          "icon": "globe"
         },
         {
-          "anchor": "Blog",
-          "href": "https://mintlify.com/blog",
-          "icon": "newspaper"
+          "anchor": "Status",
+          "href": "https://status.hypedexer.com",
+          "icon": "activity"
         }
       ]
     }
@@ -117,15 +124,15 @@
   },
   "contextual": {
     "options": [
-     "copy",
-     "view",
-     "chatgpt",
-     "claude",
-     "perplexity",
-     "mcp",
-     "cursor",
-     "vscode"
-   ]
+      "copy",
+      "view",
+      "chatgpt",
+      "claude",
+      "perplexity",
+      "mcp",
+      "cursor",
+      "vscode"
+    ]
   },
   "footer": {
     "socials": {

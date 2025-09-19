@@ -1,0 +1,206 @@
+openapi: 3.0.3
+info:
+  title: HypeDexer Proxy API
+  description: >
+    Proxy API exposing the /info endpoint with JWT or API key auth, Redis rate limiting, cache/stale cache,
+    and hedged requests (local→public fallback). Works for EU and JP base URLs (same structure).
+  version: "1.0.0"
+servers:
+  - url: https://api-eu.yourdomain.com
+    description: EU region
+  - url: https://api-jp.yourdomain.com
+    description: JP region
+tags:
+  - name: System
+  - name: Info
+security:
+  - BearerAuth: []
+  - ApiKeyHeader: []
+  - ApiKeyQuery: []
+paths:
+  /healthz:
+    get:
+      tags: [System]
+      summary: Health check
+      responses:
+        "204":
+          description: No Content – service is up
+  /metrics:
+    get:
+      tags: [System]
+      summary: Prometheus metrics
+      responses:
+        "200":
+          description: Text exposition format
+          content:
+            text/plain:
+              schema:
+                type: string
+              example: "hl_proxy_up 1\n"
+  /info:
+    post:
+      tags: [Info]
+      summary: Query account info (body contains user)
+      description: >
+        Primary endpoint. Provide `type` and `user` (0x + 40 hex). Returns JSON from upstream.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/InfoRequest"
+            examples:
+              example:
+                value:
+                  type: spotClearinghouseState
+                  user: "0x8fcc8f55d7a8cdaee770a9e4112725d4a2c60492"
+      responses:
+        "200":
+          description: Successful response (proxied)
+          headers:
+            X-Source:
+              description: Source of data – "local", "public", "cache", or "stale-cache".
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+        "400":
+          description: Bad request (unsupported type or invalid user)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          description: Unauthorized (invalid or missing token/key)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "429":
+          description: Rate limited (per key and per key+IP)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "502":
+          description: Upstreams failed (stale cache may be used when available)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /info/{wallet}:
+    post:
+      tags: [Info]
+      summary: Query account info (wallet in path)
+      description: >
+        Compatibility variant. If `user` is absent in the body, the `{wallet}` path parameter will be used.
+      parameters:
+        - in: path
+          name: wallet
+          required: true
+          description: Wallet address (0x + 40 hex)
+          schema:
+            $ref: "#/components/schemas/Wallet"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/InfoRequestOptionalUser"
+            examples:
+              example:
+                value:
+                  type: portfolio
+      responses:
+        "200":
+          description: Successful response (proxied)
+          headers:
+            X-Source:
+              description: Source of data – "local", "public", "cache", or "stale-cache".
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+        "400":
+          description: Bad request (unsupported type or invalid wallet/user)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "429":
+          description: Rate limited
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "502":
+          description: Upstreams failed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: HS256 JWT (Authorization: Bearer <token>)
+    ApiKeyHeader:
+      type: apiKey
+      in: header
+      name: X-API-Key
+    ApiKeyQuery:
+      type: apiKey
+      in: query
+      name: key
+  schemas:
+    InfoType:
+      type: string
+      enum:
+        - portfolio
+        - userNonFundingLedgerUpdates
+        - webData2
+        - historicalOrders
+        - frontendOpenOrders
+        - userFunding
+        - spotClearinghouseState
+    Wallet:
+      type: string
+      pattern: '^0x[0-9a-fA-F]{40}$'
+      example: "0x8fcc8f55d7a8cdaee770a9e4112725d4a2c60492"
+    InfoRequest:
+      type: object
+      required: [type, user]
+      properties:
+        type:
+          $ref: "#/components/schemas/InfoType"
+        user:
+          $ref: "#/components/schemas/Wallet"
+    InfoRequestOptionalUser:
+      type: object
+      required: [type]
+      properties:
+        type:
+          $ref: "#/components/schemas/InfoType"
+        user:
+          $ref: "#/components/schemas/Wallet"
+      description: >
+        If `user` is omitted, the `{wallet}` path parameter will be used.
+    Error:
+      type: object
+      properties:
+        error:
+          type: string
