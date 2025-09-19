@@ -2,3 +2,36 @@
 title: "Authentication & Api Keys"
 description: "Description of your new file."
 ---
+
+Every request to the HypeDexer API must be authenticated.\
+Currently, the supported method is **Bearer token** authentication.
+
+```
+GET /info
+Host: api-eu.hypedexer.com
+Authorization: Bearer <your_api_token>
+```
+
+- Replace `<your_api_token>` with the key you received from us.
+- Without a valid token, requests will return **401 Unauthorized**.
+
+> **Note:** Rate limits are enforced per token. See the [Rate limits & quotas](/guides/rate-limits-and-quotas) section for details.
+
+## Free access tier
+
+You can **try the API freely** — each account comes with a limited number of requests per month.\
+This allows you to test integration, explore endpoints, and evaluate performance before committing to a plan.
+
+Once you reach your free quota:
+
+- You’ll need to upgrade to a higher plan
+- Or wait until the quota resets at the beginning of the next month.
+
+## Getting access
+
+A dedicated **self-service dashboard** is in development where you’ll be able to generate and manage your own API keys.
+
+Until the dashboard is live:
+
+- Reach out to us directly via Email, [Telegram](https://t.me/hypedexer), or [Discord](https://discord.com/invite/cbKncMeZ52).
+- We’ll provide you with API credentials so you can start integrating right away.

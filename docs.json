@@ -34,7 +34,6 @@
           {
             "group": "Business",
             "pages": [
-              "guides/pricing",
               "guides/changelog",
               "guides/faq"
             ]
@@ -59,7 +58,7 @@
           },
           {
             "group": "REST API — Historical",
-            "openapi": "api-reference/openapi-historical.json" 
+            "openapi": "api-reference/openapi-historical.json"
           },
           {
             "group": "WebSocket",
@@ -87,25 +86,25 @@
     ],
     "global": {
       "anchors": [
-        { 
-          "anchor": "Twitter",  
-          "href": "https://x.com/hypedexer",  
-          "icon": "x" 
-        }, 
         {
-          "anchor": "Discord",  
-          "href": "https://discord.com/invite/cbKncMeZ52", 
+          "anchor": "Twitter",
+          "href": "https://x.com/hypedexer",
+          "icon": "x"
+        },
+        {
+          "anchor": "Discord",
+          "href": "https://discord.com/invite/cbKncMeZ52",
           "icon": "discord"
-        }, 
-        { 
+        },
+        {
           "anchor": "Telegram",
           "href": "https://t.me/hypedexer",
-          "icon": "telegram" 
-        }, 
-        { 
-          "anchor": "Email",  
+          "icon": "telegram"
+        },
+        {
+          "anchor": "Email",
           "href": "mailto:contact@hypedexer.com",
-          "icon": "envelope" 
+          "icon": "envelope"
         }
       ]
     }
