@@ -11,14 +11,14 @@
   "navigation": {
     "tabs": [
       {
-        "tab": "Guides",
+        "tab": "Overview",
         "groups": [
           {
-            "group": "Getting started",
+            "group": "Overview",
             "pages": [
               "index",
-              "guides/authentication-and-api-keys",
               "guides/environments-and-regions-eu-jp",
+              "guides/authentication-and-api-keys",
               "guides/base-urls-and-versioning"
             ]
           },
