@@ -1,4 +1,24 @@
 ---
 title: "Base Urls & Versioning"
-description: "Description of your new file."
 ---
+
+## Versioning strategy
+
+Currently the API is served at **v1** (implicit).
+
+- All endpoints are stable and backwards-compatible.
+- Breaking changes will only be introduced with a **new version prefix**.
+
+Example (future versioning):
+
+```
+https://api-eu.hypedexer.com/v1/info
+https://api-jp.hypedexer.com/v1/info
+```
+
+If no prefix is specified (e.g. `/info`), it resolves to **v1**.
+
+## Deprecation policy
+
+- When a new version (e.g. **v2**) is released, older versions remain available for a transition period (announced in Changelog).
+- Deprecated versions will return warnings in the response headers before retirement.
