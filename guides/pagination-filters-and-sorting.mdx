@@ -1,4 +1,46 @@
 ---
 title: "Pagination Filters & Sorting"
-description: "Description of your new file."
 ---
+
+
+This page explains how to fetch large result sets efficiently and deterministically across both regions (EU/JP).
+
+## Pagination model
+
+We use **cursor-based pagination** for stable, scalable iteration over large datasets.
+
+### Request parameters
+
+| Name    | Type   | Default | Notes |
+|--------|--------|---------|------|
+| `limit` | number | 100     | Max per plan (see *Rate Limits & Pricing*). Higher `limit` increases **request weight**. |
+| `cursor` | string | —     | Opaque token from the previous response’s `nextCursor`. Treat as an **opaque string**. |
+| `sort`  | string | `ts:desc` | Sorting field and direction. Allowed: `ts:desc`, `ts:asc`. |
+
+### Response fields
+
+| Field         | Type        | Notes |
+|---------------|-------------|-------|
+| `data`        | array       | The current page of results. |
+| `nextCursor`  | string \| null | Use to fetch the **next** page. `null` means end of results. |
+| `hasMore`     | boolean     | Convenience flag (equivalent to `nextCursor != null`). |
+| `count`       | number      | Number of items in `data` (optional). |
+
+> **Opaque cursor:** do not try to parse or construct the cursor; always reuse the token returned by the API.
+
+### Example (POST body — historical slice)
+
+```json
+{
+  "type": "historicalOrders",
+  "user": "0x8fcc8f55d7a8cdaee770a9e4112725d4a2c60492",
+  "limit": 500,
+  "cursor": null,
+  "sort": "ts:desc",
+  "filters": {
+    "pair": "BTC/USDT",
+    "since": "2025-08-01T00:00:00Z",
+    "until": "2025-08-31T23:59:59Z",
+    "side": ["buy","sell"]
+  }
+}

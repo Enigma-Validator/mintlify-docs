@@ -1,4 +1,52 @@
 ---
 title: "Overview"
-description: "Description of your new file."
 ---
+
+We offer two WebSocket options:
+
+- **HypeDexer WS (native)** — curated streams powered by our indexer/database. 
+
+- **Hyperliquid WS (bridged)** — we maintain upstream connections to the official WS and relay selected channels. Your usage is subject to our caps (below) and upstream availability.
+
+\> **Accounting & plan limits:** see the section **“WebSockets — General model & pricing characteristics”** for how events convert to credits and for per-plan caps. (You can place that section right below this page.)
+
+---
+
+## Endpoints (regions)
+
+Choose the closest region. Both regions expose the same WS protocol.
+
+\`\`\`text
+
+EU (Frankfurt): wss://[ws-eu.hypedexer.com](http://ws-eu.hypedexer.com)
+
+JP (Tokyo):     wss://[ws-jp.hypedexer.com](http://ws-jp.hypedexer.com)
+
+### Accounting (how WS usage is billed)
+
+- **Events → credits:** `100 delivered events = 1 weighted request` (rounded up per minute per connection).
+- WS events are **pooled** with REST credits in your monthly quota.
+- We may expose `X-WS-Delivered` headers/metrics later for transparency.
+- We reserve the right to adjust caps/weights with prior notice (see Changelog).
+
+### Per-plan WebSocket limits
+
+| Plan           | HypeDexer WS — Max connections | HypeDexer WS — Max subscriptions | Included WS events / month | Hyperliquid WS (bridged) allowance |
+| -------------- | -----------------------------: | -------------------------------: | -------------------------: | ---------------------------------- |
+| **Free**       | 1                              | 20                               | 200,000                    | Limited (1 conn / 10 subs)         |
+| **Starter**    | 5                              | 200                              | 5,000,000                  | Moderate (2 conns / 50 subs)       |
+| **Growth**     | 20                             | 600                              | 25,000,000                 | Expanded (5 conns / 200 subs)      |
+| **Scale**      | 50                             | 1,500                            | 100,000,000                | High (10 conns / 500 subs)         |
+| **Enterprise** | Custom                         | Custom                           | Custom                     | Custom                             |
+
+> **Definitions:**\
+> **Connection** = one open WS socket to our edge.\
+> **Subscription** = one active stream (topic/channel) on a connection.\
+> Counts are aggregated across regions (EU/JP).
+
+### Notes & guardrails
+
+- **Bridged Hyperliquid WS:** we proxy a subset of official streams. To protect upstream limits, our per-tenant caps may be stricter than Hyperliquid’s global caps. If you need more, contact us.
+- **Throughput & backpressure:** bursty clients may be throttled to preserve fairness.
+- **Read-only:** bridged channels are data/market feeds; order-posting or RPC limits (if any) are handled separately.
+- **Migration path:** if/when native HypeDexer WS covers your needs, prefer **HypeDexer WS** for simpler accounting and lower upstream coupling.
