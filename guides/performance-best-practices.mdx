@@ -1,4 +1,88 @@
----
+----
 title: "Performance & Best Practices"
-description: "Description of your new file."
+description: "Practical tips to minimize latency, cost, and errors for REST and WebSocket usage."
 ---
+
+
+This guide summarizes how to get **low latency**, **predictable costs**, and **stable** behavior across both regions (EU/JP). It’s short, actionable, and safe to use in production.
+
+
+## Pick the right transport
+
+- **Use REST** for **snapshots, historical pulls, pagination, and batch jobs**.  
+- **Use WebSocket** for **live updates**; keep a small number of sockets and **multiplex** subscriptions.
+
+> Pattern: **REST snapshot → apply WS deltas**. Refresh snapshot periodically or on reconnect.
+
+
+## Region selection
+
+Both regions expose the same API and pricing. Choose the **closest** region to your users/runners for best latency:
+
+```text
+EU (Frankfurt): https://api-eu.hypedexer.com
+JP (Tokyo):     https://api-jp.hypedexer.com
+```
+
+
+
+## Reduce cost & load (REST)
+
+### Filter early
+- Narrow by `pair`, `since`, `until`, `side`, `user` to avoid pulling extra rows.
+
+### Right-size pages
+- Default `limit` is **100**.
+- Increasing `limit` raises **request weight** (see [Rate Limits & Pricing](/guides/rate-limits-and-pricing)).
+- For bulk exports, use **1,000–2,000** per page and stream pages.
+
+### Avoid hot-loop polling
+- Poll only when needed.
+- Cache recent results on your side and de-duplicate identical requests.
+
+### Batch and coalesce
+- Combine multiple small fetches into one larger page (within your plan’s caps).
+- De-dup identical in-flight requests so only **one** hits the API.
+
+### Stable iteration
+- Use **cursor-based pagination** consistently.
+- Keep `sort` fixed across pages (e.g., `ts:desc`).
+
+### WebSocket patterns
+
+- Few connections, many subscriptions (multiplex).
+- Backpressure: if you can’t keep up, drop or throttle rather than buffer indefinitely.
+- Heartbeat: handle `ping/pong;` reconnect with jittered backoff.
+- Resubscribe after reconnect; consider a quick REST snapshot to avoid gaps.
+- Billing: by default, 100 delivered events = 1 weighted request (pooled with REST).
+
+### Caching & idempotency
+
+- Cache short-lived responses client-side.
+- Coalesce identical requests; reuse response if `body/params` are identical.
+- Primary POST `/info` is safe to repeat with the same body (idempotent in effect).
+
+### Observability to keep you fast
+
+- Track per-call metrics on your side:
+- latency_ms (p50/p90/p99)
+- response_bytes, result_count
+- request_weight (if header exposed)
+- success vs. retry count
+- chosen region (EU/JP)
+
+Alert when `p99` latency or error rate exceeds your thresholds.
+
+
+
+### Quick checklist
+
+- Use the nearest region.
+- Filter and paginate (don’t pull the universe).
+- Keep limited concurrency aligned with your plan.
+- Backoff + jitter for retries; honor Retry-After.
+- Prefer REST snapshot → WS deltas for live apps.
+- Coalesce duplicate requests; cache recent pages.
+- Monitor latency, size, weight, errors.
+
+Small improvements compound: a 20–30% reduction in payload size often yields similar reductions in latency and credits consumed.

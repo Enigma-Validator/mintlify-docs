@@ -1,4 +1,29 @@
 ---
 title: "Errors"
-description: "Description of your new file."
 ---
+
+All error responses use standard HTTP status codes and a compact JSON body.
+
+## Error format
+
+```json
+{ "error": "<human-readable message>" }
+```
+
+
+### Status codes (at a glance)
+
+| Status | Meaning                   | When it happens                                                         | Recommended action                              |
+|------:|----------------------------|-------------------------------------------------------------------------|-------------------------------------------------|
+| **200** | OK                       | Successful request                                                      | —                                               |
+| **400** | Bad Request              | Invalid JSON, missing/invalid fields (`user`, `type`), unsupported type | Fix the request and retry                       |
+| **401** | Unauthorized             | Missing/invalid Bearer token or API key                                 | Add valid `Authorization: Bearer <token>`       |
+| **403** | Forbidden                | Authenticated but not allowed for this resource/plan                    | Upgrade plan or contact support                 |
+| **404** | Not Found                | Wrong path/route                                                        | Check the endpoint path                         |
+| **429** | Too Many Requests        | Per-token or per-token+IP rate limit exceeded                           | Honor `Retry-After`; backoff + jitter           |
+| **500** | Internal Server Error    | Unexpected server error                                                 | Retry with exponential backoff                  |
+| **502** | Bad Gateway              | Upstream providers failed; no fresh/stale data available                | Retry/backoff; try the other region (EU/JP)     |
+| **503** | Service Unavailable      | Maintenance window or temporary overload                                | Retry after a short delay                       |
+
+> On **429**, the response includes `Retry-After`, `X-RateLimit-Limit`, `X-RateLimit-Remaining`, and `X-RateLimit-Reset`.
+
