@@ -1,19 +1,16 @@
-----
+---
 title: "Performance & Best Practices"
 description: "Practical tips to minimize latency, cost, and errors for REST and WebSocket usage."
 ---
 
-
 This guide summarizes how to get **low latency**, **predictable costs**, and **stable** behavior across both regions (EU/JP). It’s short, actionable, and safe to use in production.
-
 
 ## Pick the right transport
 
-- **Use REST** for **snapshots, historical pulls, pagination, and batch jobs**.  
+- **Use REST** for **snapshots, historical pulls, pagination, and batch jobs**.
 - **Use WebSocket** for **live updates**; keep a small number of sockets and **multiplex** subscriptions.
 
 > Pattern: **REST snapshot → apply WS deltas**. Refresh snapshot periodically or on reconnect.
-
 
 ## Region selection
 
@@ -24,27 +21,30 @@ EU (Frankfurt): https://api-eu.hypedexer.com
 JP (Tokyo):     https://api-jp.hypedexer.com
 ```
 
-
-
 ## Reduce cost & load (REST)
 
 ### Filter early
+
 - Narrow by `pair`, `since`, `until`, `side`, `user` to avoid pulling extra rows.
 
 ### Right-size pages
+
 - Default `limit` is **100**.
 - Increasing `limit` raises **request weight** (see [Rate Limits & Pricing](/guides/rate-limits-and-pricing)).
 - For bulk exports, use **1,000–2,000** per page and stream pages.
 
 ### Avoid hot-loop polling
+
 - Poll only when needed.
 - Cache recent results on your side and de-duplicate identical requests.
 
 ### Batch and coalesce
+
 - Combine multiple small fetches into one larger page (within your plan’s caps).
 - De-dup identical in-flight requests so only **one** hits the API.
 
 ### Stable iteration
+
 - Use **cursor-based pagination** consistently.
 - Keep `sort` fixed across pages (e.g., `ts:desc`).
 
@@ -73,8 +73,6 @@ JP (Tokyo):     https://api-jp.hypedexer.com
 
 Alert when `p99` latency or error rate exceeds your thresholds.
 
-
-
 ### Quick checklist
 
 - Use the nearest region.
@@ -86,7 +84,6 @@ Alert when `p99` latency or error rate exceeds your thresholds.
 - Monitor latency, size, weight, errors.
 
 Small improvements compound: a 20–30% reduction in payload size often yields similar reductions in latency and credits consumed.
-
 
 ---
 
