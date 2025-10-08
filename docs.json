@@ -53,8 +53,8 @@
             ]
           },
           {
-            "group": "REST API — Live data",
-            "openapi": "api-reference/openapi-live.json"
+            "group": "REST API",
+            "openapi": "api-reference/openapi-final.json"
           },
           {
             "group": "REST API — Historical",
