@@ -1,4 +1,42 @@
 ---
 title: "Notation"
-description: "Description of your new file."
+description: "Symbols and conventions used in the Hypedexer API"
 ---
+
+Below is a breakdown of the notation, abbreviations, and conventions used throughout the Hypedexer API.  
+We aim for clarity and consistency, though future versions (v1+) may revise or standardize further.
+
+| Abbreviation | Full Name     | Explanation |
+|--------------|----------------|-------------|
+| `Px`         | Price           | The price of the asset. |
+| `Sz`         | Size            | The amount of the asset in its base unit (coin). |
+| `Side`       | Side             | Side of trade or book: `B` = Bid / Buy, `A` = Ask / Sell (short). (It indicates the aggressing side for trades.) |
+| `Asset`      | Asset             | An integer identifier representing the asset being traded (see “Asset IDs” section). |
+| `Tif`        | Time in Force    | Order execution policy: e.g. `GTC` = good-until-canceled, `IOC` = immediate or cancel, `ALO` = add liquidity only (post only). |
+
+---
+
+## Notes & Future Changes
+
+- The current **v0** version of our API uses these conventions.  
+- In **v1**, we may adopt more standard or stricter naming conventions to improve consistency.  
+- Whenever you see an abbreviation in endpoint responses, refer to this table for its meaning.
+
+
+---
+Need Help ?
+
+<Columns cols={2}>
+  <Card title="Telegram" icon="telegram" href="https://t.me/hypedexer">
+    
+  </Card>
+  <Card title="Discord" icon="discord" href="https://discord.com/invite/cbKncMeZ52">
+    
+  </Card>
+  <Card title="Email" icon="envelope" href="mailto:contact@hypedexer.com">
+    
+  </Card>
+  <Card title="Twitter" icon="twitter" href="https://x.com/hypedexer">
+    
+  </Card>
+</Columns>
