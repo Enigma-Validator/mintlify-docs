@@ -2,3 +2,29 @@
 title: "Endpoints"
 description: "Description of your new file."
 ---
+
+---
+title: "WebSocket API"
+description: "Realtime streams for completed trades and spot fills (Japan region)"
+---
+
+# WebSocket API (Japan region)
+
+**Base URL (Japan):**  
+`wss://api-jp.hypedexer.com/ws`
+
+> Note: We also operate a Europe region. API keys generated in the dashboard work on both regions.  
+> Generate or manage your keys at: https://www.app.hypedexer.com/dashboard/keys
+
+This page documents the polling-style WebSocket streams we expose. Each stream polls the DB periodically and pushes **delta** batches to connected clients.
+
+---
+
+## Common query parameters
+
+All streams accept the following optional query parameters:
+
+- `batch_size` — integer (default **200**). Max rows to receive per push. Allowed range: **1–1000**.  
+- `poll_ms` — integer (default **500**). Poll interval in milliseconds. Allowed range: **50–5000**.
+
+Example connection URL (no auth in URL shown here):

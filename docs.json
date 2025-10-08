@@ -58,10 +58,10 @@
           },
           {
             "group": "WebSocket",
+            "openapi": "api-reference/ws.openapi.json",
             "pages": [
-              "websocket/overview",
-              "websocket/endpoints"
-            ]
+              "websocket/overview"
+            ]            
           }
         ]
       }

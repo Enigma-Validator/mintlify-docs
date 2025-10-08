@@ -1,0 +1,263 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Hypedexer WebSocket API (JP region)",
+    "version": "0.1.0",
+    "description": "Realtime WebSocket streams for completed trades and spot fills.\n\n**Base URL (Japan):** `wss://api-jp.hypedexer.com/ws`\n\nAuthentication is required via **X-API-Key** (handshake header), or alternatively `?key=` query param for browser clients.\n\nFree plan available for testing (higher latency). Keys work across regions."
+  },
+  "servers": [
+    { "url": "wss://api-jp.hypedexer.com/ws", "description": "Japan region (WebSocket)" }
+  ],
+  "tags": [
+    { "name": "WebSocket", "description": "Realtime streams (handshake endpoints)" }
+  ],
+  "components": {
+    "securitySchemes": {
+      "X-API-Key": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "X-API-Key",
+        "description": "Generate at https://www.app.hypedexer.com/dashboard/keys. Example: `X-API-Key: hl_live_ABCDEF.123456`"
+      }
+    },
+    "parameters": {
+      "BatchSize": {
+        "name": "batch_size",
+        "in": "query",
+        "description": "Max rows per push (default 200, 1–1000).",
+        "schema": { "type": "integer", "minimum": 1, "maximum": 1000, "default": 200 }
+      },
+      "PollMs": {
+        "name": "poll_ms",
+        "in": "query",
+        "description": "Poll interval in milliseconds (default 500, 50–5000).",
+        "schema": { "type": "integer", "minimum": 50, "maximum": 5000, "default": 500 }
+      },
+      "ApiKeyQuery": {
+        "name": "key",
+        "in": "query",
+        "required": false,
+        "description": "API key as query parameter (browser-friendly alternative to the X-API-Key header).",
+        "schema": { "type": "string", "example": "hl_live_ABCDEF.123456" }
+      },
+      "UserAddress": {
+        "name": "user_address",
+        "in": "path",
+        "required": true,
+        "description": "EVM wallet (0x + 40 hex).",
+        "schema": { "type": "string", "pattern": "^0x[0-9a-fA-F]{40}$", "example": "0x8fcc8f55d7a8cdaee770a9e4112725d4a2c60492" }
+      }
+    },
+    "schemas": {
+      "ErrorFrame": {
+        "type": "object",
+        "properties": {
+          "type": { "type": "string", "const": "error" },
+          "message": { "type": "string" }
+        },
+        "required": ["type", "message"]
+      },
+      "CompletedTradesFrame": {
+        "type": "object",
+        "properties": {
+          "type": { "type": "string", "const": "completed_trades" },
+          "count": { "type": "integer" },
+          "data": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": true,
+              "properties": {
+                "created_at": { "type": "string", "format": "date-time" }
+              }
+            }
+          }
+        },
+        "required": ["type", "count", "data"]
+      },
+      "CompletedTradesUserFrame": {
+        "type": "object",
+        "properties": {
+          "type": { "type": "string", "const": "completed_trades_user" },
+          "user": { "type": "string", "pattern": "^0x[0-9a-fA-F]{40}$" },
+          "count": { "type": "integer" },
+          "data": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": true,
+              "properties": {
+                "created_at": { "type": "string", "format": "date-time" }
+              }
+            }
+          }
+        },
+        "required": ["type", "user", "count", "data"]
+      },
+      "FillsSpotFrame": {
+        "type": "object",
+        "properties": {
+          "type": { "type": "string", "const": "fills_spot" },
+          "count": { "type": "integer" },
+          "data": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": true,
+              "properties": {
+                "time_dt": { "type": "string", "format": "date-time" },
+                "time": { "type": "string" }
+              }
+            }
+          }
+        },
+        "required": ["type", "count", "data"]
+      },
+      "RecentActivityFrame": {
+        "type": "object",
+        "properties": {
+          "type": { "type": "string", "const": "recent_activity" },
+          "count": { "type": "integer" },
+          "data": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": true,
+              "properties": {
+                "stream": { "type": "string", "enum": ["completed_trades", "fills_spot"] }
+              }
+            }
+          }
+        },
+        "required": ["type", "count", "data"]
+      }
+    }
+  },
+  "security": [{ "X-API-Key": [] }],
+  "paths": {
+    "/completed_trades": {
+      "get": {
+        "tags": ["WebSocket"],
+        "summary": "WebSocket: completed_trades",
+        "description": "Handshake to establish a WebSocket for **global completed trades** delta stream.\n\nProvide **X-API-Key** as a header (recommended) or `?key=` in query (for browsers). After `101 Switching Protocols`, messages are JSON frames of schema `CompletedTradesFrame`.",
+        "security": [{ "X-API-Key": [] }],
+        "parameters": [
+          { "$ref": "#/components/parameters/BatchSize" },
+          { "$ref": "#/components/parameters/PollMs" },
+          { "$ref": "#/components/parameters/ApiKeyQuery" }
+        ],
+        "responses": {
+          "101": { "description": "Switching Protocols (WebSocket established)" },
+          "401": { "description": "Unauthorized (invalid or missing API key)" }
+        },
+        "x-examples": {
+          "message": {
+            "application/json": {
+              "example": {
+                "type": "completed_trades",
+                "count": 3,
+                "data": [
+                  { "trade_id": "1234", "created_at": "2025-10-08T14:35:21.123Z", "market": "BTC-PERP", "price": 68500.5, "size": 0.01, "side": "B" }
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    "/completed_trades_user/{user_address}": {
+      "get": {
+        "tags": ["WebSocket"],
+        "summary": "WebSocket: completed_trades_user",
+        "description": "Handshake for **user-scoped completed trades** delta stream. `{user_address}` must be `0x` + 40 hex.\n\nAfter `101`, messages follow `CompletedTradesUserFrame`.",
+        "security": [{ "X-API-Key": [] }],
+        "parameters": [
+          { "$ref": "#/components/parameters/UserAddress" },
+          { "$ref": "#/components/parameters/BatchSize" },
+          { "$ref": "#/components/parameters/PollMs" },
+          { "$ref": "#/components/parameters/ApiKeyQuery" }
+        ],
+        "responses": {
+          "101": { "description": "Switching Protocols (WebSocket established)" },
+          "401": { "description": "Unauthorized" },
+          "400": { "description": "Invalid user_address" }
+        },
+        "x-examples": {
+          "message": {
+            "application/json": {
+              "example": {
+                "type": "completed_trades_user",
+                "user": "0x8fcc8f55d7a8cdaee770a9e4112725d4a2c60492",
+                "count": 2,
+                "data": [
+                  { "trade_id": "111", "created_at": "2025-10-08T14:36:10Z", "market": "ETH-PERP", "price": 1800.0, "size": 0.5, "side": "A" }
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    "/fills_spot": {
+      "get": {
+        "tags": ["WebSocket"],
+        "summary": "WebSocket: fills_spot",
+        "description": "Handshake for **spot fills** delta stream. After `101`, messages follow `FillsSpotFrame`.",
+        "security": [{ "X-API-Key": [] }],
+        "parameters": [
+          { "$ref": "#/components/parameters/BatchSize" },
+          { "$ref": "#/components/parameters/PollMs" },
+          { "$ref": "#/components/parameters/ApiKeyQuery" }
+        ],
+        "responses": {
+          "101": { "description": "Switching Protocols (WebSocket established)" },
+          "401": { "description": "Unauthorized" }
+        },
+        "x-examples": {
+          "message": {
+            "application/json": {
+              "example": {
+                "type": "fills_spot",
+                "count": 5,
+                "data": [
+                  { "fill_id": "abc", "time_dt": "2025-10-08T14:35:50.000Z", "market": "ETH-USDT", "price": 1800.0, "size": 0.5, "side": "A" }
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    "/recent_activity": {
+      "get": {
+        "tags": ["WebSocket"],
+        "summary": "WebSocket: recent_activity",
+        "description": "Handshake for **merged feed** of completed trades and spot fills.\n\nAfter `101`, messages follow `RecentActivityFrame` with per-item `stream`.",
+        "security": [{ "X-API-Key": [] }],
+        "parameters": [
+          { "$ref": "#/components/parameters/BatchSize" },
+          { "$ref": "#/components/parameters/PollMs" },
+          { "$ref": "#/components/parameters/ApiKeyQuery" }
+        ],
+        "responses": {
+          "101": { "description": "Switching Protocols (WebSocket established)" },
+          "401": { "description": "Unauthorized" }
+        },
+        "x-examples": {
+          "message": {
+            "application/json": {
+              "example": {
+                "type": "recent_activity",
+                "count": 4,
+                "data": [
+                  { "stream": "completed_trades", "trade_id": "x1", "created_at": "2025-10-08T14:35:21Z" },
+                  { "stream": "fills_spot", "fill_id": "f1", "time_dt": "2025-10-08T14:35:50Z" }
+                ]
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
