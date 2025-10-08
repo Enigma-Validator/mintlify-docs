@@ -115,6 +115,7 @@
       "get": {
         "tags": ["Completed Trades"],
         "summary": "List completed trades",
+        "security": [{ "X-API-Key": [] }],
         "parameters": [
           { "name": "start_time", "in": "query", "schema": { "type": "string", "format": "date-time" } },
           { "name": "end_time", "in": "query", "schema": { "type": "string", "format": "date-time" } },
@@ -131,6 +132,7 @@
       "get": {
         "tags": ["Completed Trades"],
         "summary": "Completed trades summary",
+        "security": [{ "X-API-Key": [] }],
         "parameters": [
           { "name": "start_time", "in": "query", "schema": { "type": "string", "format": "date-time" } },
           { "name": "end_time", "in": "query", "schema": { "type": "string", "format": "date-time" } },
