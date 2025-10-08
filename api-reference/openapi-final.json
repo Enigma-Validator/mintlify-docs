@@ -210,6 +210,14 @@
     }
   },
   "components": {
+    "securitySchemes": {
+      "X-API-Key": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "X-API-Key",
+        "description": "Generate an API key from https://www.app.hypedexer.com/dashboard/keys and include it in every request header as `X-API-Key: <your_key>`."
+      }
+    },
     "schemas": {
       "APIResponse": {
         "type": "object",
@@ -255,5 +263,8 @@
         }
       }
     }
-  }
+  },
+  "security": [
+    { "X-API-Key": [] }
+  ]
 }
