@@ -16,6 +16,26 @@ We aim for clarity and consistency, though future versions (v1+) may revise or s
 
 ---
 
+## Spot vs Perpetual (Perp)
+
+Both **Spot** and **Perp** markets are indexed in the Hypedexer API, but they differ in a few key aspects:
+
+| Attribute | **Spot** | **Perp (Perpetual)** |
+|------------|-----------|----------------------|
+| **Definition** | Direct exchange of assets (e.g., USDT ↔ BTC). | Derivative contract tracking an underlying asset’s price. |
+| **Settlement** | Immediate — actual tokens are exchanged. | No expiry — PnL is settled continuously. |
+| **Funding Rate** | ❌ Not applicable. | ✅ Periodic funding payments between longs and shorts. |
+| **Leverage** | ❌ Typically none. | ✅ Supported (variable by market). |
+| **Price Source** | Based on order book and trades on the spot market. | Follows the spot price, adjusted via funding mechanism. |
+| **Endpoints** | `/fills/spot/`, `/fills/spot/user/{user}` | `/fills/` (includes both Spot + Perp data). |
+
+> 💡 **Tip:**  
+> If you only need spot data, use the `/fills/spot/` endpoints.  
+> If you want both spot and perp data together, use the `/fills/` endpoints (these include all).
+
+---
+
+
 ## Notes & Future Changes
 
 - The current **v0** version of our API uses these conventions.  

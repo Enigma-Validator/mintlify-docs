@@ -57,28 +57,10 @@
             "openapi": "api-reference/openapi-final.json"
           },
           {
-            "group": "REST API — Historical",
-            "openapi": "api-reference/openapi-historical.json"
-          },
-          {
             "group": "WebSocket",
             "pages": [
               "websocket/overview",
               "websocket/endpoints"
-            ]
-          },
-          {
-            "group": "Spot",
-            "pages": [
-              "api/spot/overview",
-              "api/spot/endpoints"
-            ]
-          },
-          {
-            "group": "Perp",
-            "pages": [
-              "api/perp/overview",
-              "api/perp/endpoints"
             ]
           }
         ]
