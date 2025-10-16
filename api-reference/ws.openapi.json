@@ -3,7 +3,7 @@
   "info": {
     "title": "Hypedexer WebSocket API (EU region)",
     "version": "1.0.0",
-    "description": "Realtime WebSocket stream for live trading data from Hypedexer.\n\n**Base URL:** `wss://api-eu.hypedexer.com/ws`\n\nAuthenticate using your API key from the dashboard:\n```\nX-API-Key: hl_live_ABCDEF.123456\n```\n\nOnce connected, send JSON messages to subscribe or unsubscribe from different data streams.\n\nKeys work across all regions (Japan & Europe)."
+    "description": "Realtime WebSocket stream for live trading data from Hypedexer.\n\n**Base URL:** `wss://api-eu.hypedexer.com/ws`\n\nAuthenticate using your API key from the dashboard:\n```\nX-API-Key: <your_api_key>\n```\n\nOnce connected, send JSON messages to subscribe or unsubscribe from different data streams.\n\nKeys work across all regions (Japan & Europe)."
   },
   "servers": [
     { "url": "wss://api-eu.hypedexer.com/ws", "description": "Europe region (WebSocket)" }
@@ -32,6 +32,28 @@
           "401": { "description": "Unauthorized (invalid or missing API key)" }
         },
         "x-websocket": true,
+        "x-codeSamples": [
+          {
+            "lang": "bash",
+            "label": "wscat (replace with your key)",
+            "source": "wscat -H \"X-API-Key: <your_api_key>\" -c wss://api-eu.hypedexer.com/ws\n# Example: wscat -H \"X-API-Key: hl_live_fd8a27fffd.1d1b9439ae5c4f89b26506fa\" -c wss://api-eu.hypedexer.com/ws\n# Then paste a subscription, e.g.:\n# {\"method\":\"subscribe\",\"subscription\":{\"type\":\"completed_trades\"}}\n"
+          },
+          {
+            "lang": "javascript",
+            "label": "Browser (query param alternative)",
+            "source": "const key = '<your_api_key>';\nconst ws = new WebSocket(`wss://api-eu.hypedexer.com/ws`);\nws.onopen = () => {\n  ws.send(JSON.stringify({ method: 'subscribe', subscription: { type: 'fills_spot' } }));\n};\nws.onmessage = (e) => console.log(JSON.parse(e.data));\n"
+          },
+          {
+            "lang": "javascript",
+            "label": "Node.js (headers)",
+            "source": "import WebSocket from 'ws';\nconst ws = new WebSocket('wss://api-eu.hypedexer.com/ws', { headers: { 'X-API-Key': '<your_api_key>' } });\nws.on('open', () => ws.send(JSON.stringify({ method: 'subscribe', subscription: { type: 'recent_activity' } })));\nws.on('message', msg => console.log(JSON.parse(msg.toString())));\n"
+          },
+          {
+            "lang": "python",
+            "label": "Python (headers)",
+            "source": "import asyncio, json, websockets\nasync def main():\n    url = 'wss://api-eu.hypedexer.com/ws'\n    async with websockets.connect(url, extra_headers={'X-API-Key': '<your_api_key>'}) as ws:\n        await ws.send(json.dumps({ 'method': 'subscribe', 'subscription': { 'type': 'completed_trades' } }))\n        async for msg in ws:\n            print(json.loads(msg))\nasyncio.run(main())\n"
+          }
+        ],
         "x-examples": {
           "clientMessages": [
             { "method": "subscribe", "subscription": { "type": "completed_trades" } },
@@ -45,28 +67,14 @@
               "type": "completed_trades",
               "count": 1,
               "data": [
-                {
-                  "trade_id": "t1",
-                  "created_at": "2025-10-08T14:35:21.123Z",
-                  "market": "BTC-PERP",
-                  "price": 68500.5,
-                  "size": 0.01,
-                  "side": "B"
-                }
+                { "trade_id": "t1", "created_at": "2025-10-08T14:35:21.123Z", "market": "BTC-PERP", "price": 68500.5, "size": 0.01, "side": "B" }
               ]
             },
             {
               "type": "fills_spot",
               "count": 1,
               "data": [
-                {
-                  "fill_id": "f1",
-                  "time_dt": "2025-10-08T14:35:50.000Z",
-                  "market": "ETH-USDT",
-                  "price": 1800.0,
-                  "size": 0.5,
-                  "side": "A"
-                }
+                { "fill_id": "f1", "time_dt": "2025-10-08T14:35:50.000Z", "market": "ETH-USDT", "price": 1800.0, "size": 0.5, "side": "A" }
               ]
             },
             {
@@ -78,7 +86,10 @@
               ]
             },
             { "type": "error", "message": "invalid subscription" }
-          ]
+          ],
+          "cli": {
+            "wscat": "wscat -H \"X-API-Key: <your_api_key>\" -c wss://api-eu.hypedexer.com/ws\n# Example (your provided test):\n# wscat -H \"X-API-Key: hl_live_fd8a27fffd.1d1b9439ae5c4f89b26506fa\" -c wss://api-eu.hypedexer.com/ws"
+          }
         }
       }
     }
@@ -99,11 +110,11 @@
           "type": {
             "type": "string",
             "description": "Subscription stream type.",
-            "enum": ["completed_trades", "fills_spot", "recent_activity"]
+            "enum": ["completed_trades", "fills_spot", "recent_activity", "completed_trades_user"]
           },
           "user": {
             "type": "string",
-            "description": "Required for user-specific subscription (`completed_trades` with user).",
+            "description": "Required when `type` is `completed_trades_user`.",
             "example": "0x8fcc8f55d7a8cdaee770a9e4112725d4a2c60492"
           }
         },
