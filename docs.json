@@ -99,13 +99,13 @@
     "links": [
       {
         "label": "Support",
-        "href": "mailto:contact@hypedexer.com"
+        "href": "https://t.me/hypedexer"
       }
     ],
     "primary": {
       "type": "button",
       "label": "Dashboard",
-      "href": "https://dashboard.mintlify.com"
+      "href": "https://www.app.hypedexer.com/"
     }
   },
   "contextual": {
