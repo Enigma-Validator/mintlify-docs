@@ -1,80 +1,73 @@
 {
   "openapi": "3.1.0",
   "info": {
-    "title": "Hypedexer WebSocket API (Subscriptions)",
+    "title": "Hypedexer WebSocket API (EU region)",
     "version": "1.0.0",
-    "description": "Realtime WebSocket endpoint with client-managed subscriptions.\n\n**Base URL (Japan):** `wss://api-jp.hypedexer.com/ws`\n\n**Authentication**\n- `X-API-Key: <key>` (handshake header — recommended)\n- `Authorization: Bearer <token>` (alternative)\n- `Sec-WebSocket-Protocol: apikey.<key>` (alternative, utile pour certains clients/browsers)\n\nKeys are generated in the dashboard and work across regions: https://www.app.hypedexer.com/dashboard/keys\n\n**Notes**\n- Free plan available for testing (higher latency).\n- Subscriptions are managed by sending JSON messages after the WebSocket is established."
+    "description": "Realtime WebSocket stream for live trading data from Hypedexer.\n\n**Base URL:** `wss://api-eu.hypedexer.com/ws`\n\nAuthenticate using your API key from the dashboard:\n```\nX-API-Key: hl_live_ABCDEF.123456\n```\n\nOnce connected, send JSON messages to subscribe or unsubscribe from different data streams.\n\nKeys work across all regions (Japan & Europe)."
   },
   "servers": [
-    { "url": "wss://api-jp.hypedexer.com/ws", "description": "Japan region (WebSocket base)" }
+    { "url": "wss://api-eu.hypedexer.com/ws", "description": "Europe region (WebSocket)" }
   ],
   "tags": [
-    { "name": "WebSocket", "description": "Handshake and subscription control" },
-    { "name": "WebSocket Utility", "description": "HTTP helpers for WebSocket usage/limits" }
+    { "name": "WebSocket", "description": "Realtime subscriptions for trading data" }
   ],
   "paths": {
     "/ws": {
       "get": {
-        "summary": "WebSocket endpoint (subscribe / unsubscribe)",
         "tags": ["WebSocket"],
-        "description": "Establish a WebSocket connection and manage **subscriptions** via JSON messages.\n\n### Authentication\nProvide your key using **one** of the following during the handshake:\n- `X-API-Key: <key>` (header)\n- `Authorization: Bearer <token>` (header)\n- `Sec-WebSocket-Protocol: apikey.<key>` (header, subprotocol)\n\n### Client messages\n- **Subscribe**\n```json\n{ \"method\": \"subscribe\", \"subscription\": { \"type\": \"completed_trades\" } }\n```\n- **Subscribe (user-specific)**\n```json\n{ \"method\": \"subscribe\", \"subscription\": { \"type\": \"completed_trades_user\", \"user\": \"0x8fcc8f55d7a8cdaee770a9e4112725d4a2c60492\" } }\n```\n- **Unsubscribe**\n```json\n{ \"method\": \"unsubscribe\", \"subscription\": { \"type\": \"completed_trades\" } }\n```\n- **List current subscriptions**\n```json\n{ \"method\": \"list_subscriptions\" }\n```\n\n### Server events\n- `completed_trades`, `completed_trades_user`, `fills_spot`, `recent_activity`\n- `error` frames on failure",
+        "summary": "WebSocket connection (subscribe / unsubscribe)",
+        "description": "Establish a WebSocket connection and manage subscriptions.\n\n### Authentication\nInclude your API key during the handshake:\n```\nX-API-Key: <your_api_key>\n```\n\n### Available subscriptions\n- `completed_trades` — all recent completed trades\n- `completed_trades` with `user` — trades for a specific user\n- `fills_spot` — spot fills stream\n- `recent_activity` — combined recent fills and trades\n\n### Example messages\n**Subscribe:**\n```json\n{ \"method\": \"subscribe\", \"subscription\": { \"type\": \"completed_trades\" } }\n```\n\n**Subscribe (user specific):**\n```json\n{ \"method\": \"subscribe\", \"subscription\": { \"type\": \"completed_trades\", \"user\": \"0x8fcc8f55d7a8cdaee770a9e4112725d4a2c60492\" } }\n```\n\n**Subscribe (spot fills):**\n```json\n{ \"method\": \"subscribe\", \"subscription\": { \"type\": \"fills_spot\" } }\n```\n\n**Subscribe (recent activity):**\n```json\n{ \"method\": \"subscribe\", \"subscription\": { \"type\": \"recent_activity\" } }\n```\n\n**Unsubscribe:**\n```json\n{ \"method\": \"unsubscribe\", \"subscription\": { \"type\": \"completed_trades\" } }\n```\n\nAfter subscribing, the server will send JSON frames with real-time data for each stream.",
         "parameters": [
           {
             "name": "X-API-Key",
             "in": "header",
-            "required": false,
-            "description": "API key (alternative to Authorization or Sec-WebSocket-Protocol).",
+            "required": true,
+            "description": "Your API key from the Hypedexer dashboard.",
             "schema": { "type": "string", "example": "hl_live_ABCDEF.123456" }
-          },
-          {
-            "name": "Authorization",
-            "in": "header",
-            "required": false,
-            "description": "Bearer token (alternative to X-API-Key / Sec-WebSocket-Protocol).",
-            "schema": { "type": "string", "example": "Bearer <jwt>" }
-          },
-          {
-            "name": "Sec-WebSocket-Protocol",
-            "in": "header",
-            "required": false,
-            "description": "Subprotocol carrying the API key as `apikey.<key>` for browser compatibility.",
-            "schema": { "type": "string", "example": "apikey.hl_live_ABCDEF.123456" }
           }
         ],
-        "security": [
-          { "X-API-Key": [] },
-          { "BearerAuth": [] }
-        ],
+        "security": [{ "X-API-Key": [] }],
         "responses": {
           "101": { "description": "Switching Protocols (WebSocket established)" },
-          "401": { "description": "Unauthorized" }
+          "401": { "description": "Unauthorized (invalid or missing API key)" }
         },
         "x-websocket": true,
         "x-examples": {
           "clientMessages": [
             { "method": "subscribe", "subscription": { "type": "completed_trades" } },
-            { "method": "subscribe", "subscription": { "type": "completed_trades_user", "user": "0x8fcc8f55d7a8cdaee770a9e4112725d4a2c60492" } },
+            { "method": "subscribe", "subscription": { "type": "completed_trades", "user": "0x8fcc8f55d7a8cdaee770a9e4112725d4a2c60492" } },
             { "method": "subscribe", "subscription": { "type": "fills_spot" } },
             { "method": "subscribe", "subscription": { "type": "recent_activity" } },
-            { "method": "unsubscribe", "subscription": { "type": "completed_trades" } },
-            { "method": "list_subscriptions" }
+            { "method": "unsubscribe", "subscription": { "type": "completed_trades" } }
           ],
           "serverEvents": [
             {
               "type": "completed_trades",
               "count": 1,
-              "data": [{ "trade_id": "t1", "created_at": "2025-10-08T14:35:21.123Z" }]
-            },
-            {
-              "type": "completed_trades_user",
-              "user": "0x8fcc8f55d7a8cdaee770a9e4112725d4a2c60492",
-              "count": 2,
-              "data": [{ "trade_id": "t2", "created_at": "2025-10-08T14:36:10Z" }]
+              "data": [
+                {
+                  "trade_id": "t1",
+                  "created_at": "2025-10-08T14:35:21.123Z",
+                  "market": "BTC-PERP",
+                  "price": 68500.5,
+                  "size": 0.01,
+                  "side": "B"
+                }
+              ]
             },
             {
               "type": "fills_spot",
-              "count": 3,
-              "data": [{ "fill_id": "f1", "time_dt": "2025-10-08T14:35:50.000Z" }]
+              "count": 1,
+              "data": [
+                {
+                  "fill_id": "f1",
+                  "time_dt": "2025-10-08T14:35:50.000Z",
+                  "market": "ETH-USDT",
+                  "price": 1800.0,
+                  "size": 0.5,
+                  "side": "A"
+                }
+              ]
             },
             {
               "type": "recent_activity",
@@ -88,62 +81,6 @@
           ]
         }
       }
-    },
-    "/ws/limits": {
-      "get": {
-        "summary": "Get WebSocket limits",
-        "tags": ["WebSocket Utility"],
-        "description": "Returns current WebSocket-related limits/quotas for the API key.",
-        "parameters": [
-          {
-            "name": "X-API-Key",
-            "in": "header",
-            "required": false,
-            "schema": { "type": "string" }
-          },
-          {
-            "name": "Authorization",
-            "in": "header",
-            "required": false,
-            "schema": { "type": "string" }
-          }
-        ],
-        "security": [
-          { "X-API-Key": [] },
-          { "BearerAuth": [] }
-        ],
-        "responses": {
-          "200": {
-            "description": "Limits payload",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "additionalProperties": true,
-                  "properties": {
-                    "max_connections": { "type": "integer" },
-                    "max_subscriptions": { "type": "integer" },
-                    "min_poll_ms": { "type": "integer" },
-                    "max_batch_size": { "type": "integer" }
-                  }
-                },
-                "examples": {
-                  "default": {
-                    "summary": "Example",
-                    "value": {
-                      "max_connections": 3,
-                      "max_subscriptions": 8,
-                      "min_poll_ms": 50,
-                      "max_batch_size": 1000
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "401": { "description": "Unauthorized" }
-        }
-      }
     }
   },
   "components": {
@@ -152,13 +89,7 @@
         "type": "apiKey",
         "in": "header",
         "name": "X-API-Key",
-        "description": "Generate in dashboard and send as `X-API-Key: <key>` or use `Sec-WebSocket-Protocol: apikey.<key>` during handshake."
-      },
-      "BearerAuth": {
-        "type": "http",
-        "scheme": "bearer",
-        "bearerFormat": "JWT",
-        "description": "Alternative auth: `Authorization: Bearer <token>`"
+        "description": "Your Hypedexer API key. Generate it at https://www.app.hypedexer.com/dashboard/keys."
       }
     },
     "schemas": {
@@ -167,13 +98,13 @@
         "properties": {
           "type": {
             "type": "string",
-            "description": "Subscription stream",
-            "enum": ["completed_trades", "completed_trades_user", "fills_spot", "recent_activity"]
+            "description": "Subscription stream type.",
+            "enum": ["completed_trades", "fills_spot", "recent_activity"]
           },
           "user": {
             "type": "string",
-            "description": "Required only for `completed_trades_user`",
-            "pattern": "^0x[0-9a-fA-F]{40}$"
+            "description": "Required for user-specific subscription (`completed_trades` with user).",
+            "example": "0x8fcc8f55d7a8cdaee770a9e4112725d4a2c60492"
           }
         },
         "required": ["type"]
@@ -194,127 +125,20 @@
         },
         "required": ["method", "subscription"]
       },
-      "WsClientMessageList": {
-        "type": "object",
-        "properties": { "method": { "type": "string", "const": "list_subscriptions" } },
-        "required": ["method"]
-      },
       "WsClientMessage": {
         "oneOf": [
           { "$ref": "#/components/schemas/WsClientMessageSubscribe" },
-          { "$ref": "#/components/schemas/WsClientMessageUnsubscribe" },
-          { "$ref": "#/components/schemas/WsClientMessageList" }
+          { "$ref": "#/components/schemas/WsClientMessageUnsubscribe" }
         ],
         "discriminator": {
           "propertyName": "method",
           "mapping": {
             "subscribe": "#/components/schemas/WsClientMessageSubscribe",
-            "unsubscribe": "#/components/schemas/WsClientMessageUnsubscribe",
-            "list_subscriptions": "#/components/schemas/WsClientMessageList"
-          }
-        }
-      },
-      "WsEventCompletedTrades": {
-        "type": "object",
-        "properties": {
-          "type": { "type": "string", "const": "completed_trades" },
-          "count": { "type": "integer" },
-          "data": {
-            "type": "array",
-            "items": {
-              "type": "object",
-              "additionalProperties": true,
-              "properties": { "created_at": { "type": "string", "format": "date-time" } }
-            }
-          }
-        },
-        "required": ["type", "count", "data"]
-      },
-      "WsEventCompletedTradesUser": {
-        "type": "object",
-        "properties": {
-          "type": { "type": "string", "const": "completed_trades_user" },
-          "user": { "type": "string", "pattern": "^0x[0-9a-fA-F]{40}$" },
-          "count": { "type": "integer" },
-          "data": {
-            "type": "array",
-            "items": {
-              "type": "object",
-              "additionalProperties": true,
-              "properties": { "created_at": { "type": "string", "format": "date-time" } }
-            }
-          }
-        },
-        "required": ["type", "user", "count", "data"]
-      },
-      "WsEventFillsSpot": {
-        "type": "object",
-        "properties": {
-          "type": { "type": "string", "const": "fills_spot" },
-          "count": { "type": "integer" },
-          "data": {
-            "type": "array",
-            "items": {
-              "type": "object",
-              "additionalProperties": true,
-              "properties": {
-                "time_dt": { "type": "string", "format": "date-time" },
-                "time": { "type": "string" }
-              }
-            }
-          }
-        },
-        "required": ["type", "count", "data"]
-      },
-      "WsEventRecentActivity": {
-        "type": "object",
-        "properties": {
-          "type": { "type": "string", "const": "recent_activity" },
-          "count": { "type": "integer" },
-          "data": {
-            "type": "array",
-            "items": {
-              "type": "object",
-              "additionalProperties": true,
-              "properties": {
-                "stream": { "type": "string", "enum": ["completed_trades", "fills_spot"] }
-              }
-            }
-          }
-        },
-        "required": ["type", "count", "data"]
-      },
-      "WsEventError": {
-        "type": "object",
-        "properties": {
-          "type": { "type": "string", "const": "error" },
-          "message": { "type": "string" }
-        },
-        "required": ["type", "message"]
-      },
-      "WsServerEvent": {
-        "oneOf": [
-          { "$ref": "#/components/schemas/WsEventCompletedTrades" },
-          { "$ref": "#/components/schemas/WsEventCompletedTradesUser" },
-          { "$ref": "#/components/schemas/WsEventFillsSpot" },
-          { "$ref": "#/components/schemas/WsEventRecentActivity" },
-          { "$ref": "#/components/schemas/WsEventError" }
-        ],
-        "discriminator": {
-          "propertyName": "type",
-          "mapping": {
-            "completed_trades": "#/components/schemas/WsEventCompletedTrades",
-            "completed_trades_user": "#/components/schemas/WsEventCompletedTradesUser",
-            "fills_spot": "#/components/schemas/WsEventFillsSpot",
-            "recent_activity": "#/components/schemas/WsEventRecentActivity",
-            "error": "#/components/schemas/WsEventError"
+            "unsubscribe": "#/components/schemas/WsClientMessageUnsubscribe"
           }
         }
       }
     }
   },
-  "security": [
-    { "X-API-Key": [] },
-    { "BearerAuth": [] }
-  ]
+  "security": [{ "X-API-Key": [] }]
 }
