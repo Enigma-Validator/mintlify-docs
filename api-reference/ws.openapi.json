@@ -36,7 +36,7 @@
           {
             "lang": "bash",
             "label": "wscat (replace with your key)",
-            "source": "wscat -H \"X-API-Key: <your_api_key>\" -c wss://api-eu.hypedexer.com/ws\n# Example: wscat -H \"X-API-Key: hl_live_fd8a27fffd.1d1b9439ae5c4f89b26506fa\" -c wss://api-eu.hypedexer.com/ws\n# Then paste a subscription, e.g.:\n# {\"method\":\"subscribe\",\"subscription\":{\"type\":\"completed_trades\"}}\n"
+            "source": "wscat -H \"X-API-Key: <your_api_key>\" -c wss://api-eu.hypedexer.com/ws\n# Example: wscat -H \"X-API-Key: hl_live_ABCDEF.123456\" -c wss://api-eu.hypedexer.com/ws\n# Then paste a subscription, e.g.:\n# {\"method\":\"subscribe\",\"subscription\":{\"type\":\"completed_trades\"}}\n"
           },
           {
             "lang": "javascript",
