@@ -5,6 +5,9 @@
     "version": "1.0.0",
     "description": "API to query indexed Hyperliquid trading data.\n\nThis API provides access to stored/indexed trading data:\n- **Fills**: Executed orders and fills (Spot-only or All = Spot + Perp)\n- **Analytics**: Aggregations and statistics based on indexed data\n- **Completed Trades**: Trade objects and their related fills\n- **Users**: User overviews, performance and activity\n\n> Note: No live streaming. Responses are computed from indexed data.\n"
   },
+  "servers": [
+  { "url": "https://api-eu.hypedexer.com", "description": "EU production" }
+],
   "tags": [
     { "name": "API", "description": "General endpoints and shared response format." },
     { "name": "Fills", "description": "Fills endpoints. `/fills/` = All (Spot + Perp). `/fills/spot/` = Spot only." },
