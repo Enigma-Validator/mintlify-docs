@@ -33,6 +33,216 @@
         }
       }
     },
+    "/fills/recent": {
+"get": {
+"tags": [
+"Fills"
+],
+"summary": "Get Fills Recent",
+"description": "Recent fills (live table, 24h TTL) — same filters as `/fills`,\nfaster responses for the recent time window.",
+"operationId": "get_fills_recent_fills_recent_get",
+"parameters": [
+{
+"name": "user",
+"in": "query",
+"required": false,
+"schema": {
+"anyOf": [
+{
+"type": "string"
+},
+{
+"type": "null"
+}
+],
+"description": "User address",
+"title": "User"
+},
+"description": "User address"
+},
+{
+"name": "coin",
+"in": "query",
+"required": false,
+"schema": {
+"anyOf": [
+{
+"type": "string"
+},
+{
+"type": "null"
+}
+],
+"description": "Coin symbol",
+"title": "Coin"
+},
+"description": "Coin symbol"
+},
+{
+"name": "side",
+"in": "query",
+"required": false,
+"schema": {
+"anyOf": [
+{
+"$ref": "#/components/schemas/SideEnum"
+},
+{
+"type": "null"
+}
+],
+"description": "Side (B=Buy, A=Sell)",
+"title": "Side"
+},
+"description": "Side (B=Buy, A=Sell)"
+},
+{
+"name": "start_time",
+"in": "query",
+"required": false,
+"schema": {
+"anyOf": [
+{
+"type": "string",
+"format": "date-time"
+},
+{
+"type": "null"
+}
+],
+"description": "Start time (ISO UTC)",
+"title": "Start Time"
+},
+"description": "Start time (ISO UTC)"
+},
+{
+"name": "end_time",
+"in": "query",
+"required": false,
+"schema": {
+"anyOf": [
+{
+"type": "string",
+"format": "date-time"
+},
+{
+"type": "null"
+}
+],
+"description": "End time (ISO UTC)",
+"title": "End Time"
+},
+"description": "End time (ISO UTC)"
+},
+{
+"name": "offset",
+"in": "query",
+"required": false,
+"schema": {
+"type": "integer",
+"minimum": 0,
+"description": "Pagination offset (deprecated, prefer cursor)",
+"default": 0,
+"title": "Offset"
+},
+"description": "Pagination offset (deprecated, prefer cursor)"
+},
+{
+"name": "limit",
+"in": "query",
+"required": false,
+"schema": {
+"anyOf": [
+{
+"type": "integer",
+"maximum": 100,
+"minimum": 1,
+"exclusiveMaximum": false
+},
+{
+"type": "null"
+}
+],
+"description": "Max results (cap 1000; None = unlimited)",
+"default": 100,
+"title": "Limit"
+},
+"description": "Max results (cap 1000; None = unlimited)\n\nTo request more than 100 results, use an external client (outside Swagger/Redoc)."
+},
+{
+"name": "cursor",
+"in": "query",
+"required": false,
+"schema": {
+"anyOf": [
+{
+"type": "string"
+},
+{
+"type": "null"
+}
+],
+"description": "Keyset cursor: '<time_ms>:<tid>'",
+"title": "Cursor"
+},
+"description": "Keyset cursor: '<time_ms>:<tid>'"
+},
+{
+"name": "order",
+"in": "query",
+"required": false,
+"schema": {
+"type": "string",
+"pattern": "^(?i)(ASC|DESC)$",
+"description": "Sort by time: ASC or DESC",
+"default": "DESC",
+"title": "Order"
+},
+"description": "Sort by time: ASC or DESC"
+},
+{
+"name": "X-API-Key",
+"in": "header",
+"required": false,
+"schema": {
+"anyOf": [
+{
+"type": "string"
+},
+{
+"type": "null"
+}
+],
+"description": "API key for authentication (required by Cloudflare)",
+"title": "X-Api-Key"
+},
+"description": "API key for authentication (required by Cloudflare)"
+}
+],
+"responses": {
+"200": {
+"description": "Successful Response",
+"content": {
+"application/json": {
+"schema": {
+"$ref": "#/components/schemas/APIResponse"
+}
+}
+}
+},
+"422": {
+"description": "Validation Error",
+"content": {
+"application/json": {
+"schema": {
+"$ref": "#/components/schemas/HTTPValidationError"
+}
+}
+}
+}
+}
+}
+},
     "/fills/user/{user_address}": {
       "get": {
         "tags": ["Fills"],
