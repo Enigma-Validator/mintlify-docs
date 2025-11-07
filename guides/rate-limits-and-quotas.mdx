@@ -39,7 +39,8 @@ HypeDexer applies **per-token** and **per-IP** rate limiting to ensure fair use 
 **429 response headers:** `Retry-After`, `X-RateLimit-Limit`, `X-RateLimit-Remaining`, `X-RateLimit-Reset`.
 
 **Weights by category**
-- For now, every **query** has the same weight
+- **Historical (3):** `/fills/`
+- **Other (1):** for now, every other query uses the same weight
 
 **Result-size multiplier**  
 `request_weight = endpoint_weight × ceil(limit / 1000)`  
