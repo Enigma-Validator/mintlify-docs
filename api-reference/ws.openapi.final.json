@@ -13,7 +13,7 @@
   ],
   "tags": [
     {
-      "name": "WS-Multiplex",
+      "name": "WS-Overview",
       "description": "Generic `/ws` endpoint with dynamic subscribe/unsubscribe to multiple streams."
     },
     {
@@ -40,7 +40,7 @@
   "paths": {
     "/ws": {
       "get": {
-        "tags": ["WS-Multiplex"],
+        "tags": ["WS-Overview"],
         "summary": "Multiplex WebSocket (subscribe / unsubscribe)",
         "description": "Establish a WebSocket connection and manage **dynamic subscriptions**.\n\n### Authentication\nInclude the API key as a header during the handshake:\n\n```text\nX-API-Key: <your_api_key>\n```\n\n### Available subscriptions\n- `completed_trades` — all recent completed trades\n- `completed_trades` with `user` — trades for a specific user\n- `fills_spot` — spot fills stream\n- `recent_activity` — combined recent fills and trades\n- `liquidation` — liquidation events (optional filters: `user`, `amount_dollars`)\n\n### Client messages\nYou send JSON frames with a `method` and a `subscription` object.\n\n**Subscribe:**\n```json\n{ \"method\": \"subscribe\", \"subscription\": { \"type\": \"completed_trades\" } }\n```\n\n**Subscribe (user specific):**\n```json\n{ \"method\": \"subscribe\", \"subscription\": { \"type\": \"completed_trades\", \"user\": \"0x8fcc8f55d7a8cdaee770a9e4112725d4a2c60492\" } }\n```\n\n**Subscribe (spot fills):**\n```json\n{ \"method\": \"subscribe\", \"subscription\": { \"type\": \"fills_spot\" } }\n```\n\n**Subscribe (recent activity):**\n```json\n{ \"method\": \"subscribe\", \"subscription\": { \"type\": \"recent_activity\" } }\n```\n\n**Subscribe (liquidations, filtered):**\n```json\n{ \"method\": \"subscribe\", \"subscription\": { \"type\": \"liquidation\", \"amount_dollars\": 50000 } }\n```\n\n**Unsubscribe:**\n```json\n{ \"method\": \"unsubscribe\", \"subscription\": { \"type\": \"completed_trades\" } }\n```\n\nThe server sends JSON frames with `type` and payload data for each stream.",
         "parameters": [
