@@ -58,7 +58,7 @@
           },
           {
             "group": "WebSocket",
-            "openapi": "api-reference/ws.openapi.json",
+            "openapi": "api-reference/ws.openapi.final.json",
             "pages": [
               "websocket/overview"
             ]            
