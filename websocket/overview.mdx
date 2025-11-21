@@ -20,7 +20,6 @@ Choose the closest region. Both regions expose the same WS protocol.
 EU (Frankfurt): wss://[api-eu.hypedexer.com/ws](https://api-eu.hypedexer.com/ws)
 
 JP (Tokyo):     wss://[api-jp.hypedexer.com/ws](https://api-jp.hypedexer.com/ws)
-
 ```
 
 ### Accounting (how WS usage is billed)
@@ -34,9 +33,9 @@ JP (Tokyo):     wss://[api-jp.hypedexer.com/ws](https://api-jp.hypedexer.com/ws)
 
 | Plan           | HypeDexer WS — Max connections | HypeDexer WS — Max subscriptions | Included WS events / month | Hyperliquid WS (bridged) allowance |
 | -------------- | -----------------------------: | -------------------------------: | -------------------------: | ---------------------------------- |
-| **Starter**    | 1                              | 200                              | 500,000                  | Moderate (2 conns / 50 subs)       |
-| **Growth**     | 20                             | 600                              | 3,000,000                 | Expanded (5 conns / 200 subs)      |
-| **Scale**      | 50                             | 1,500                            | 12,500,000                | High (10 conns / 500 subs)         |
+| **Starter**    | 1                              | 200                              | 500,000                    | Moderate (2 conns / 50 subs)       |
+| **Growth**     | 20                             | 600                              | 3,000,000                  | Expanded (5 conns / 200 subs)      |
+| **Scale**      | 50                             | 1,500                            | 12,500,000                 | High (10 conns / 500 subs)         |
 | **Enterprise** | Custom                         | Custom                           | Custom                     | Custom                             |
 
 > **Definitions:**\
@@ -45,11 +44,64 @@ JP (Tokyo):     wss://[api-jp.hypedexer.com/ws](https://api-jp.hypedexer.com/ws)
 > Counts are aggregated across regions (EU/JP).
 
 ### Heartbeat
+
 - **Ping interval** every 60 seconds (respond with pong)
- 
+
 ### Notes & guardrails
 
 - **Bridged Hyperliquid WS:** we proxy a subset of official streams. To protect upstream limits, our per-tenant caps may be stricter than Hyperliquid’s global caps. If you need more, contact us.
 - **Throughput & backpressure:** bursty clients may be throttled to preserve fairness.
 - **Read-only:** bridged channels are data/market feeds; order-posting or RPC limits (if any) are handled separately.
 - **Migration path:** if/when native HypeDexer WS covers your needs, prefer **HypeDexer WS** for simpler accounting and lower upstream coupling.
+
+### Connection
+
+When the connection is established, the server sends an initial welcome payload:
+
+```json
+
+{
+    "type": "welcome",
+    "message": "WebSocket /ws ready",
+    "available_methods": [
+        "subscribe",
+        "unsubscribe",
+        "list_subscriptions"
+    ],
+    "available_subscriptions": [
+        "completed_trades",
+        "fills_spot",
+        "recent_activity",
+        "liquidation"
+    ]
+}
+```
+
+To start receiving data, you must send a subscription message:
+
+```json
+{
+  "method": "subscribe",
+  "subscription": { "type": "liquidation" }
+}
+```
+
+After subscribing, the server confirms that the subscription is active:
+
+```json
+{
+  "active_subscriptions": [
+    "liquidation|amount_dollars=50000.0"
+  ],
+  "subscription": {
+    "amount_dollars": 50000.0,
+    "status": "active",
+    "type": "liquidation"
+  },
+  "type": "subscription_added"
+}
+```
+
+<Warning>
+  Automatic reconnection can trigger additional `welcome` messages. Make sure to filter them out in your client.
+</Warning>
