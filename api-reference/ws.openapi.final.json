@@ -40,7 +40,7 @@
   "paths": {
     "/ws": {
       "get": {
-        "tags": ["WS - Multiplex"],
+        "tags": ["WS - Multiplex", "ws-multiplex"],
         "summary": "Multiplex WebSocket (subscribe / unsubscribe)",
         "description": "Establish a WebSocket connection and manage **dynamic subscriptions**.\n\n### Authentication\nInclude the API key as a header during the handshake:\n\n```text\nX-API-Key: <your_api_key>\n```\n\n### Available subscriptions\n- `completed_trades` — all recent completed trades\n- `completed_trades` with `user` — trades for a specific user\n- `fills_spot` — spot fills stream\n- `recent_activity` — combined recent fills and trades\n- `liquidation` — liquidation events (optional filters: `user`, `amount_dollars`)\n\n### Client messages\nYou send JSON frames with a `method` and a `subscription` object.\n\n**Subscribe:**\n```json\n{ \"method\": \"subscribe\", \"subscription\": { \"type\": \"completed_trades\" } }\n```\n\n**Subscribe (user specific):**\n```json\n{ \"method\": \"subscribe\", \"subscription\": { \"type\": \"completed_trades\", \"user\": \"0x8fcc8f55d7a8cdaee770a9e4112725d4a2c60492\" } }\n```\n\n**Subscribe (spot fills):**\n```json\n{ \"method\": \"subscribe\", \"subscription\": { \"type\": \"fills_spot\" } }\n```\n\n**Subscribe (recent activity):**\n```json\n{ \"method\": \"subscribe\", \"subscription\": { \"type\": \"recent_activity\" } }\n```\n\n**Subscribe (liquidations, filtered):**\n```json\n{ \"method\": \"subscribe\", \"subscription\": { \"type\": \"liquidation\", \"amount_dollars\": 50000 } }\n```\n\n**Unsubscribe:**\n```json\n{ \"method\": \"unsubscribe\", \"subscription\": { \"type\": \"completed_trades\" } }\n```\n\nThe server sends JSON frames with `type` and payload data for each stream.",
         "parameters": [
@@ -152,7 +152,7 @@
 
     "/liquidations": {
       "get": {
-        "tags": ["WS - Liquidations"],
+        "tags": ["WS - Liquidations", "ws-liquidations"],
         "summary": "Liquidations stream (dedicated endpoint)",
         "description": "Low-level WebSocket that streams **liquidation events** from `liq_events`.\n\n- Messages are sent as individual events with `type: liquidation`.\n- No `subscribe/unsubscribe` protocol here (the whole connection is for liquidations).",
         "parameters": [
@@ -176,7 +176,7 @@
 
     "/completed_trades": {
       "get": {
-        "tags": ["WS - Completed Trades"],
+        "tags": ["WS - Completed Trades", "ws-completed-trades"],
         "summary": "Completed trades stream",
         "description": "Dedicated WebSocket streaming `type: completed_trades` batches.\n\nUses an internal cursor based on `created_at`.",
         "parameters": [
@@ -212,7 +212,7 @@
 
     "/completed_trades_user/{user_address}": {
       "get": {
-        "tags": ["WS - Completed Trades"],
+        "tags": ["WS - Completed Trades", "ws-completed-trades"],
         "summary": "Completed trades stream for a specific user",
         "description": "Dedicated WebSocket for completed trades of a **single user**.\nMessages have `type: completed_trades_user` and include a `user` field.",
         "parameters": [
@@ -255,7 +255,7 @@
 
     "/fills_spot": {
       "get": {
-        "tags": ["WS - Fills"],
+        "tags": ["WS - Fills", "ws-fills"],
         "summary": "Spot fills stream",
         "description": "Dedicated WebSocket streaming `type: fills_spot` batches.\n\nEquivalent to the REST fills/spot scope but in real time.",
         "parameters": [
@@ -291,7 +291,7 @@
 
     "/recent_activity": {
       "get": {
-        "tags": ["WS - Recent Activity"],
+        "tags": ["WS - Recent Activity", "ws-recent-activity"],
         "summary": "Recent activity stream (trades + fills)",
         "description": "Dedicated WebSocket that merges new **completed trades** and **fills** into one stream.\n\nMessages have `type: recent_activity` and `data` entries tagged by `stream`.",
         "parameters": [
@@ -327,7 +327,7 @@
 
     "/echo": {
       "get": {
-        "tags": ["WS - Echo"],
+        "tags": ["WS - Echo", "ws-echo"],
         "summary": "Echo test WebSocket",
         "description": "Simple echo WebSocket: every text frame sent by the client is sent back as-is.\nUseful to test connectivity and authentication.",
         "parameters": [
