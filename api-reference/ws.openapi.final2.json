@@ -1,0 +1,210 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "HL Indexer WebSocket API (EU)",
+    "version": "1.0.0",
+    "description": "Realtime WebSocket streams for live trading data from Hypedexer.\n\n**Base URL (EU)**: `wss://api-eu.hypedexer.com/ws`\n\nThis OpenAPI spec documents the **multiplex WebSocket endpoint** `/ws`.\nAll streams (completed trades, fills, recent activity, liquidations, echo, etc.) use the **same endpoint** and are selected via JSON `subscribe` messages.\n\nFor stream-specific guides (examples, filters, best practices), see the dedicated WebSocket pages in the docs:\n- WS – Completed Trades\n- WS – Fills (Spot)\n- WS – Recent Activity\n- WS – Liquidations\n- WS – Echo\n\nUse your `X-API-Key` from the dashboard on every connection."
+  },
+  "servers": [
+    {
+      "url": "wss://api-eu.hypedexer.com/ws",
+      "description": "EU WebSocket base"
+    }
+  ],
+  "tags": [
+    {
+      "name": "WS-Overview",
+      "description": "Multiplex `/ws` endpoint with dynamic subscribe/unsubscribe to multiple streams."
+    }
+  ],
+  "paths": {
+    "/ws": {
+      "get": {
+        "tags": ["WS-Overview"],
+        "summary": "Multiplex WebSocket (subscribe / unsubscribe)",
+        "description": "Establish a WebSocket connection and manage **dynamic subscriptions** to multiple realtime streams.\n\n---\n\n## 1. Endpoint & Authentication\n\n**WebSocket URL (EU):**\n```text\nwss://api-eu.hypedexer.com/ws/ws\n```\n\nInclude your API key as a header during the handshake:\n```text\nX-API-Key: <your_api_key>\n```\n\n---\n\n## 2. Protocol overview\n\nAll client messages are JSON objects with a `method` and a `subscription`:\n\n- `method` ∈ `\"subscribe\"`, `\"unsubscribe\"`, `\"list_subscriptions\"`\n- `subscription` is an object describing the stream to manage\n\n### Methods\n- `subscribe` → start receiving a given stream\n- `unsubscribe` → stop receiving a given stream\n- `list_subscriptions` → get the list of active subscriptions for this connection\n\nThe server sends control frames for management:\n- `type: \"subscription_added\"`\n- `type: \"subscription_removed\"`\n- `type: \"subscriptions_list\"`\n\nAnd data frames for each stream:\n- `type: \"completed_trades\"`\n- `type: \"fills_spot\"`\n- `type: \"recent_activity\"`\n- `type: \"liquidation\"`\n\n---\n\n## 3. Available subscription types\n\nAll subscriptions are expressed via `subscription.type`:\n\n- `completed_trades` — all recent completed trades (optionally filtered by `user`)\n- `fills_spot` — spot fills stream\n- `recent_activity` — combined recent fills and trades\n- `liquidation` — liquidation events (optional filters: `user`, `amount_dollars`)\n\nEach type has its own dedicated documentation page in the WebSocket section of the docs, with detailed examples and use-cases.\n\n---\n\n## 4. Client messages (examples)\n\n### Subscribe: all completed trades\n```json\n{\n  \"method\": \"subscribe\",\n  \"subscription\": { \"type\": \"completed_trades\" }\n}\n```\n\n### Subscribe: completed trades for a specific user\n```json\n{\n  \"method\": \"subscribe\",\n  \"subscription\": {\n    \"type\": \"completed_trades\",\n    \"user\": \"0x8fcc8f55d7a8cdaee770a9e4112725d4a2c60492\"\n  }\n}\n```\n\n### Subscribe: spot fills\n```json\n{\n  \"method\": \"subscribe\",\n  \"subscription\": { \"type\": \"fills_spot\" }\n}\n```\n\n### Subscribe: recent activity (trades + fills)\n```json\n{\n  \"method\": \"subscribe\",\n  \"subscription\": { \"type\": \"recent_activity\" }\n}\n```\n\n### Subscribe: liquidations (filtered by notional)\n```json\n{\n  \"method\": \"subscribe\",\n  \"subscription\": {\n    \"type\": \"liquidation\",\n    \"amount_dollars\": 50000\n  }\n}\n```\n\n### Subscribe: liquidations (filtered by user)\n```json\n{\n  \"method\": \"subscribe\",\n  \"subscription\": {\n    \"type\": \"liquidation\",\n    \"user\": \"0x8fcc8f55d7a8cdaee770a9e4112725d4a2c60492\"\n  }\n}\n```\n\n### Unsubscribe\n```json\n{\n  \"method\": \"unsubscribe\",\n  \"subscription\": { \"type\": \"completed_trades\" }\n}\n```\n\nThe server then sends JSON frames with a `type` and payload data for each stream (see the dedicated pages for detailed payload shapes).",
+        "parameters": [
+          {
+            "name": "X-API-Key",
+            "in": "header",
+            "required": true,
+            "description": "Your Hypedexer API key.",
+            "schema": {
+              "type": "string",
+              "example": "hl_live_ABCDEF.123456"
+            }
+          }
+        ],
+        "security": [
+          {
+            "X-API-Key": []
+          }
+        ],
+        "responses": {
+          "101": {
+            "description": "Switching Protocols (WebSocket established)"
+          },
+          "401": {
+            "description": "Unauthorized (invalid or missing API key)"
+          }
+        },
+        "x-websocket": true,
+        "x-codeSamples": [
+          {
+            "lang": "bash",
+            "label": "wscat – basic subscribe",
+            "source": "wscat -H \"X-API-Key: <your_api_key>\" -c wss://api-eu.hypedexer.com/ws/ws\n# then:\n# {\"method\":\"subscribe\",\"subscription\":{\"type\":\"completed_trades\"}}\n"
+          },
+          {
+            "lang": "bash",
+            "label": "wscat – liquidations (>= 50k USD)",
+            "source": "wscat -H \"X-API-Key: <your_api_key>\" -c wss://api-eu.hypedexer.com/ws/ws\n# then:\n# {\"method\":\"subscribe\",\"subscription\":{\"type\":\"liquidation\",\"amount_dollars\":50000}}\n"
+          },
+          {
+            "lang": "javascript",
+            "label": "Browser – subscribe to liquidations",
+            "source": "const ws = new WebSocket('wss://api-eu.hypedexer.com/ws/ws');\\nws.onopen = () => {\\n  ws.send(JSON.stringify({\\n    method: 'subscribe',\\n    subscription: { type: 'liquidation', amount_dollars: 50000 }\\n  }));\\n};\\nws.onmessage = (e) => console.log(JSON.parse(e.data));\\n"
+          }
+        ],
+        "x-examples": {
+          "clientMessages": [
+            { "method": "subscribe", "subscription": { "type": "completed_trades" } },
+            { "method": "subscribe", "subscription": { "type": "completed_trades", "user": "0x8fcc8f55d7a8cdaee770a9e4112725d4a2c60492" } },
+            { "method": "subscribe", "subscription": { "type": "fills_spot" } },
+            { "method": "subscribe", "subscription": { "type": "recent_activity" } },
+            { "method": "subscribe", "subscription": { "type": "liquidation" } },
+            { "method": "subscribe", "subscription": { "type": "liquidation", "user": "0x8fcc8f55d7a8cdaee770a9e4112725d4a2c60492", "amount_dollars": 50000 } },
+            { "method": "unsubscribe", "subscription": { "type": "completed_trades" } }
+          ],
+          "serverEvents": [
+            {
+              "type": "completed_trades",
+              "count": 1,
+              "data": [
+                {
+                  "trade_id": "t1",
+                  "created_at": "2025-10-08T14:35:21.123Z",
+                  "market": "BTC-PERP",
+                  "price": 68500.5,
+                  "size": 0.01,
+                  "side": "B"
+                }
+              ]
+            },
+            {
+              "type": "fills_spot",
+              "count": 1,
+              "data": [
+                {
+                  "fill_id": "f1",
+                  "time_dt": "2025-10-08T14:35:50.000Z",
+                  "market": "ETH-USDT",
+                  "price": 1800.0,
+                  "size": 0.5,
+                  "side": "A"
+                }
+              ]
+            },
+            {
+              "type": "recent_activity",
+              "count": 2,
+              "data": [
+                { "stream": "completed_trades", "trade_id": "t3", "created_at": "2025-10-08T14:37:00Z" },
+                { "stream": "fills_spot", "fill_id": "f2", "time_dt": "2025-10-08T14:37:05Z" }
+              ]
+            },
+            {
+              "type": "liquidation",
+              "count": 1,
+              "data": [
+                {
+                  "time": "2025-10-08T14:40:01.000Z",
+                  "tid": 123456,
+                  "market": "BTC-PERP",
+                  "side": "long",
+                  "size": 0.5,
+                  "price": 68000,
+                  "notional_usd": 34000,
+                  "user": "0x8fcc8f55d7a8cdaee770a9e4112725d4a2c60492"
+                }
+              ]
+            },
+            { "type": "error", "message": "invalid subscription" }
+          ]
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "X-API-Key": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "X-API-Key",
+        "description": "Your Hypedexer API key. Generate it from the dashboard and send it as `X-API-Key: <your_key>`."
+      }
+    },
+    "schemas": {
+      "WsSubscription": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "description": "Subscription stream type.",
+            "enum": [
+              "completed_trades",
+              "fills_spot",
+              "recent_activity",
+              "completed_trades_user",
+              "liquidation"
+            ]
+          },
+          "user": {
+            "type": "string",
+            "description": "When `type` is `completed_trades_user` this is required. For `liquidation` it is an optional filter to only receive events for that user.",
+            "example": "0x8fcc8f55d7a8cdaee770a9e4112725d4a2c60492"
+          },
+          "amount_dollars": {
+            "type": "number",
+            "format": "double",
+            "description": "Optional minimum liquidation size in USD notional to stream when `type` = `liquidation`.",
+            "example": 50000
+          }
+        },
+        "required": ["type"]
+      },
+      "WsClientMessageSubscribe": {
+        "type": "object",
+        "properties": {
+          "method": { "type": "string", "const": "subscribe" },
+          "subscription": { "$ref": "#/components/schemas/WsSubscription" }
+        },
+        "required": ["method", "subscription"]
+      },
+      "WsClientMessageUnsubscribe": {
+        "type": "object",
+        "properties": {
+          "method": { "type": "string", "const": "unsubscribe" },
+          "subscription": { "$ref": "#/components/schemas/WsSubscription" }
+        },
+        "required": ["method", "subscription"]
+      },
+      "WsClientMessage": {
+        "oneOf": [
+          { "$ref": "#/components/schemas/WsClientMessageSubscribe" },
+          { "$ref": "#/components/schemas/WsClientMessageUnsubscribe" }
+        ],
+        "discriminator": {
+          "propertyName": "method",
+          "mapping": {
+            "subscribe": "#/components/schemas/WsClientMessageSubscribe",
+            "unsubscribe": "#/components/schemas/WsClientMessageUnsubscribe"
+          }
+        }
+      }
+    }
+  },
+  "security": [
+    { "X-API-Key": [] }
+  ]
+}
