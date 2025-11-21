@@ -58,9 +58,10 @@
           },
           {
             "group": "WebSocket",
-            "openapi": "api-reference/ws.openapi.final.json",
+            "openapi": "api-reference/ws.openapi.final2.json",
             "pages": [
-              "websocket/overview"
+              "websocket/overview",
+              "websocket/ws-completed-trades"
             ]            
           }
         ]

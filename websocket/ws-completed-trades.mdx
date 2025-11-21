@@ -5,9 +5,114 @@ description: Subscribe to completed trades streams over the /ws multiplex WebSoc
 
 # WS – Completed Trades
 
-Completed trades streams use the **multiplex WebSocket endpoint**:
-
+The completed trades stream uses the **multiplex WebSocket endpoint**:
 
 ```text
-wss://api-eu.hypedexer.com/ws
+wss://api-eu.hypedexer.com/ws/ws
+```
+
+All subscriptions go through `/ws`.  
+You authenticate using `X-API-Key` during the WebSocket handshake.
+
+---
+
+## 1. Subscribe: All completed trades
+
+### Client message
+
+```json
+{
+  "method": "subscribe",
+  "subscription": {
+    "type": "completed_trades"
+  }
+}
+```
+
+### Example server event
+
+```json
+{
+  "type": "completed_trades",
+  "count": 1,
+  "data": [
+    {
+      "trade_id": "t1",
+      "created_at": "2025-10-08T14:35:21.123Z",
+      "market": "BTC-PERP",
+      "price": 68500.5,
+      "size": 0.01,
+      "side": "B"
+    }
+  ]
+}
+```
+
+---
+
+## 2. Subscribe: Completed trades for a specific user
+
+### Client message
+
+```json
+{
+  "method": "subscribe",
+  "subscription": {
+    "type": "completed_trades",
+    "user": "0x8fcc8f55d7a8cdaee770a9e4112725d4a2c60492"
+  }
+}
+```
+
+### Example server event
+
+```json
+{
+  "type": "completed_trades",
+  "count": 2,
+  "data": [
+    {
+      "trade_id": "t42",
+      "created_at": "2025-10-08T15:12:00.000Z",
+      "market": "ETH-PERP",
+      "price": 1805.0,
+      "size": 0.3,
+      "side": "B",
+      "user": "0x8fcc8f55d7a8cdaee770a9e4112725d4a2c60492"
+    },
+    {
+      "trade_id": "t43",
+      "created_at": "2025-10-08T15:12:02.500Z",
+      "market": "ETH-PERP",
+      "price": 1804.0,
+      "size": 0.2,
+      "side": "A",
+      "user": "0x8fcc8f55d7a8cdaee770a9e4112725d4a2c60492"
+    }
+  ]
+}
+```
+
+---
+
+## 3. Unsubscribe
+
+```json
+{
+  "method": "unsubscribe",
+  "subscription": {
+    "type": "completed_trades"
+  }
+}
+```
+
+```json
+{
+  "type": "subscription_removed",
+  "subscription": {
+    "type": "completed_trades",
+    "status": "inactive"
+  },
+  "active_subscriptions": []
+}
 ```
