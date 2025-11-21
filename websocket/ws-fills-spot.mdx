@@ -1,0 +1,74 @@
+---
+title: "Fills Spot"
+description: "Subscribe to spot fills stream over the /ws multiplex WebSocket."
+---
+
+
+# Fills Spot
+
+Spot fills stream uses the **multiplex WebSocket endpoint**:
+
+```text
+wss://api-eu.hypedexer.com/ws
+```
+
+All subscriptions go through `/ws`.\
+Authenticate using `X-API-Key` during the handshake.
+
+---
+
+## 1. Subscribe to spot fills
+
+### Client message
+
+```json
+{
+  "method": "subscribe",
+  "subscription": {
+    "type": "fills_spot"
+  }
+}
+```
+
+---
+
+## 2. Example server event
+
+```json
+{
+    "type": "fills_spot",
+    "count": 1,
+    "data": [
+        {
+            "user": "0x76a475f91ae582f4a774ba21540e612aed6aca07",
+            "coin": "@107",
+            "coin_meaning": "HYPE",
+            "px": 33.67,
+            "sz": 3.42,
+            "side": "A",
+            "time": "2025-11-21T17:40:12.049999",
+            "tid": 11055306883242,
+            "oid": 244171824122,
+            "hash": "0x0000000000000000000000000000000000000000000000000000000000000000",
+            "fee": 0.08060598,
+            "fee_token": "USDC",
+            "fee_usdc": 0.08060598,
+            "type_trade": "spot",
+            "time_dt": "2025-11-21T17:40:12"
+        }
+    ]
+}
+```
+
+---
+
+## 3. Unsubscribe
+
+```json
+{
+  "method": "unsubscribe",
+  "subscription": {
+    "type": "fills_spot"
+  }
+}
+```

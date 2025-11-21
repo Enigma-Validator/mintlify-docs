@@ -1,0 +1,177 @@
+---
+title: Liquidations
+description: Subscribe to liquidation events over the /ws multiplex WebSocket, with filters for user and notional amount.
+---
+
+# Liquidations
+
+The liquidations stream uses the **multiplex WebSocket endpoint**:
+
+```text
+wss://api-eu.hypedexer.com/ws
+```
+
+All subscriptions go through `/ws`.  
+You authenticate using `X-API-Key` during the WebSocket handshake.
+
+---
+
+## 1. Subscription schema
+
+```json
+{
+  "method": "subscribe | unsubscribe | list_subscriptions",
+  "subscription": {
+    "type": "liquidation",
+    "user": "optional user address",
+    "amount_dollars": "optional minimum notional in USD"
+  }
+}
+```
+
+### Available filters
+
+For `type = "liquidation"` the server currently supports:
+
+- `user` *(optional, string)*  
+  Only stream liquidations for this user address.
+
+- `amount_dollars` *(optional, number)*  
+  Only stream liquidations where `notional_usd >= amount_dollars`.
+
+You can combine both filters.
+
+---
+
+## 2. Subscribe: All liquidations
+
+### Client message
+
+```json
+{
+  "method": "subscribe",
+  "subscription": {
+    "type": "liquidation"
+  }
+}
+```
+
+### Example server event
+
+```json
+{
+  "type": "liquidation",
+  "count": 1,
+  "data": [
+    {
+  "coin": "BTC",
+  "fee_total_liquidated": 46.226066,
+  "fill_px_vwap": 90386.0,
+  "hash": "0xfe6db3b82cbfbcf3ffe7042fc9f06f020370009dc7b2dbc6a2365f0aebb396de",
+  "liq_dir": "long",
+  "liquidated_user": "0xdbe9213f888a8e76c76c201a3a13ca8492c6e4ad",
+  "liquidator_count": 2,
+  "liquidators": [
+    "0x2d46792b530edc6951935dd7c8c79141dbcf1d43",
+    "0x77001f3760e212769cb102dd82477e1b07f84216"
+  ],
+  "mark_px": 90386.0,
+  "method": "market",
+  "notional_total": 102724.59285999999, #Total value liquidated in $
+  "size_total": 1.13651,
+  "tid": 727728300777327,
+  "time": "2025-11-19T15:46:43",
+  "time_ms": 1763567203272
+}
+  ]
+}
+```
+
+---
+
+## 3. Subscribe: Liquidations above a notional threshold
+
+Filter by minimum notional size in USD using `amount_dollars`:
+
+```json
+{
+  "method": "subscribe",
+  "subscription": {
+    "type": "liquidation",
+    "amount_dollars": 50000
+  }
+}
+```
+
+Only liquidations with `notional_usd >= 50000` are streamed.
+
+---
+
+## 4. Subscribe: Liquidations for a specific user
+
+```json
+{
+  "method": "subscribe",
+  "subscription": {
+    "type": "liquidation",
+    "user": "0x8fcc8f55d7a8cdaee770a9e4112725d4a2c60492"
+  }
+}
+```
+
+You can also **combine** filters:
+
+```json
+{
+  "method": "subscribe",
+  "subscription": {
+    "type": "liquidation",
+    "user": "0x8fcc8f55d7a8cdaee770a9e4112725d4a2c60492",
+    "amount_dollars": 50000
+  }
+}
+```
+
+---
+
+## 5. Unsubscribe
+
+```json
+{
+  "method": "unsubscribe",
+  "subscription": {
+    "type": "liquidation"
+  }
+}
+```
+
+---
+
+## 6. wscat examples
+
+### All liquidations
+
+```bash
+wscat -H "X-API-Key: <your_api_key>"   -c wss://api-eu.hypedexer.com/ws
+
+# then:
+# {"method":"subscribe","subscription":{"type":"liquidation"}}
+```
+
+### Liquidations (>= 50k USD)
+
+```bash
+wscat -H "X-API-Key: <your_api_key>"   -c wss://api-eu.hypedexer.com/ws
+
+# then:
+# {"method":"subscribe","subscription":{"type":"liquidation","amount_dollars":50000}}
+```
+
+### Liquidations for a specific user
+
+```bash
+wscat -H "X-API-Key: <your_api_key>"   -c wss://api-eu.hypedexer.com/ws
+
+# then:
+# {"method":"subscribe","subscription":{"type":"liquidation","user":"0x8fcc8f55d7a8cdaee770a9e4112725d4a2c60492"}}
+```

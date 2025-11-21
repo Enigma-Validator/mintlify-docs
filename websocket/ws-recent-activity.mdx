@@ -1,0 +1,121 @@
+---
+title: Recent Activity
+description: Subscribe to merged completed trades + fills streams over the /ws multiplex WebSocket.
+---
+
+# Recent Activity
+
+The recent activity stream uses the **multiplex WebSocket endpoint**:
+
+```text
+wss://api-eu.hypedexer.com/ws
+```
+
+This stream merges **completed trades** and **spot fills** into a single feed.
+
+---
+
+## 1. Subscription schema
+
+```json
+{
+  "method": "subscribe | unsubscribe | list_subscriptions",
+  "subscription": {
+    "type": "recent_activity"
+  }
+}
+```
+
+### Available filters
+
+For `type = "recent_activity"`:
+
+- There are **no server-side filters** (no `user`, no `coin` yet).
+- You receive a merged stream of:
+  - `stream: "completed_trades"` entries
+  - `stream: "fills_spot"` entries
+
+Filtering by user / coin / side should be done **client-side**.
+
+---
+
+## 2. Subscribe: Recent activity (trades + fills)
+
+### Client message
+
+```json
+{
+  "method": "subscribe",
+  "subscription": {
+    "type": "recent_activity"
+  }
+}
+```
+
+### Example server event
+
+```json
+{
+  "type": "recent_activity",
+  "count": 1,
+  "data": [
+    {
+      "stream": "completed_trades",
+      "user": "0xb29dcc38ed9e8e53051ccbb541601ae61437f100",
+      "coin": "HYPE",
+      "direction": "long",
+      "start_time": "2025-11-21T17:41:11.150000",
+      "end_time": "2025-11-21T17:47:14.437000",
+      "duration_s": 363.0,
+      "entry_price": 33.709091868475,
+      "exit_price": 33.668677606763,
+      "size_open": 1482.01,
+      "size_close": 1482.01,
+      "pnl_realized": -59.75819,
+      "pnl_percentage": -0.11961874675692968,
+      "leverage_type": "cross",
+      "leverage_value": 0.0,
+      "margin_used": 0.0,
+      "position_value": 49957.21123999999,
+      "funding_all_time": 0.0,
+      "funding_since_open": 0.0,
+      "liquidation_price": 0.0,
+      "max_leverage": 0.0,
+      "total_fills": 31,
+      "total_fees": 38.344123,
+      "avg_fill_price": 33.688884737619,
+      "first_fill_time": "2025-11-21T17:41:11.150000",
+      "last_fill_time": "2025-11-21T17:47:14.437000",
+      "total_volume": 99854.52814000001,
+      "counterparty": "",
+      "counterparty_oid": "0",
+      "trade_id": "trade_HYPE_f1fba2a4",
+      "close_hash": "0xcb365fc0bc22ec2bccb0042febf40202016000a657260afd6eff0b137b26c616",
+      "created_at": "2025-11-21T17:47:15.082000"
+    }
+  ]
+}
+```
+
+---
+## 3. Unsubscribe
+
+```json
+{
+  "method": "unsubscribe",
+  "subscription": {
+    "type": "recent_activity"
+  }
+}
+```
+
+---
+
+## 4. wscat example
+
+```bash
+wscat -H "X-API-Key: <your_api_key>"   -c wss://api-eu.hypedexer.com/ws
+
+# then paste:
+# {"method":"subscribe","subscription":{"type":"recent_activity"}}
+```

@@ -1,14 +1,14 @@
 ---
-title: WS – Completed Trades
+title: Completed Trades
 description: Subscribe to completed trades streams over the /ws multiplex WebSocket.
 ---
 
-# WS – Completed Trades
+# Completed Trades
 
 The completed trades stream uses the **multiplex WebSocket endpoint**:
 
 ```text
-wss://api-eu.hypedexer.com/ws/ws
+wss://api-eu.hypedexer.com/ws
 ```
 
 All subscriptions go through `/ws`.  
@@ -16,7 +16,31 @@ You authenticate using `X-API-Key` during the WebSocket handshake.
 
 ---
 
-## 1. Subscribe: All completed trades
+## 1. Subscription schema
+
+All client messages follow the same structure:
+
+```json
+{
+  "method": "subscribe | unsubscribe | list_subscriptions",
+  "subscription": {
+    "type": "completed_trades",
+    "user": "optional user address filter"
+  }
+}
+```
+
+### Available filters
+
+For `type = "completed_trades"` the server currently supports:
+
+- `user` *(optional, string)* → only stream completed trades for this user address  
+
+If `user` is omitted, you receive all completed trades.
+
+---
+
+## 2. Subscribe: All completed trades
 
 ### Client message
 
@@ -37,12 +61,37 @@ You authenticate using `X-API-Key` during the WebSocket handshake.
   "count": 1,
   "data": [
     {
-      "trade_id": "t1",
-      "created_at": "2025-10-08T14:35:21.123Z",
-      "market": "BTC-PERP",
-      "price": 68500.5,
-      "size": 0.01,
-      "side": "B"
+      "user": "0x32a71f839c54b4e5290d2abefccb9094529faacc",
+      "coin": "xyz:XYZ100",
+      "direction": "short",
+      "start_time": "2025-11-21T17:35:16.266000",
+      "end_time": "2025-11-21T17:35:18.714000",
+      "duration_s": 2.0,
+      "entry_price": 24324.0,
+      "exit_price": 24325.0,
+      "size_open": 0.0034,
+      "size_close": 0.0034,
+      "pnl_realized": -0.0034,
+      "pnl_percentage": -0.0041111659266568,
+      "leverage_type": "cross",
+      "leverage_value": 0.0,
+      "margin_used": 0.0,
+      "position_value": 82.7016,
+      "funding_all_time": 0.0,
+      "funding_since_open": 0.0,
+      "liquidation_price": 0.0,
+      "max_leverage": 0.0,
+      "total_fills": 2,
+      "total_fees": 0.142911,
+      "avg_fill_price": 24324.5,
+      "first_fill_time": "2025-11-21T17:35:16.266000",
+      "last_fill_time": "2025-11-21T17:35:18.714000",
+      "total_volume": 165.4066,
+      "counterparty": "",
+      "counterparty_oid": "0",
+      "trade_id": "trade_xyz:XYZ100_3af1dd6e",
+      "close_hash": "0xf23dcae0f9265cfdf3b7042febd2100206ea00c694297bd096067633b82a36e8",
+      "created_at": "2025-11-21T17:35:19.474000"
     }
   ]
 }
@@ -50,7 +99,7 @@ You authenticate using `X-API-Key` during the WebSocket handshake.
 
 ---
 
-## 2. Subscribe: Completed trades for a specific user
+## 3. Subscribe: Completed trades for a specific user
 
 ### Client message
 
@@ -64,38 +113,11 @@ You authenticate using `X-API-Key` during the WebSocket handshake.
 }
 ```
 
-### Example server event
-
-```json
-{
-  "type": "completed_trades",
-  "count": 2,
-  "data": [
-    {
-      "trade_id": "t42",
-      "created_at": "2025-10-08T15:12:00.000Z",
-      "market": "ETH-PERP",
-      "price": 1805.0,
-      "size": 0.3,
-      "side": "B",
-      "user": "0x8fcc8f55d7a8cdaee770a9e4112725d4a2c60492"
-    },
-    {
-      "trade_id": "t43",
-      "created_at": "2025-10-08T15:12:02.500Z",
-      "market": "ETH-PERP",
-      "price": 1804.0,
-      "size": 0.2,
-      "side": "A",
-      "user": "0x8fcc8f55d7a8cdaee770a9e4112725d4a2c60492"
-    }
-  ]
-}
-```
-
 ---
 
-## 3. Unsubscribe
+## 4. Unsubscribe
+
+To stop receiving completed trades on this connection:
 
 ```json
 {
@@ -106,6 +128,8 @@ You authenticate using `X-API-Key` during the WebSocket handshake.
 }
 ```
 
+Example confirmation:
+
 ```json
 {
   "type": "subscription_removed",
@@ -115,4 +139,28 @@ You authenticate using `X-API-Key` during the WebSocket handshake.
   },
   "active_subscriptions": []
 }
+```
+
+---
+
+## 5. wscat examples
+
+### All completed trades
+
+```bash
+wscat -H "X-API-Key: <your_api_key>" \
+  -c wss://api-eu.hypedexer.com/ws
+
+# then paste:
+# {"method":"subscribe","subscription":{"type":"completed_trades"}}
+```
+
+### Completed trades for a user
+
+```bash
+wscat -H "X-API-Key: <your_api_key>" \
+  -c wss://api-eu.hypedexer.com/ws
+
+# then paste:
+# {"method":"subscribe","subscription":{"type":"completed_trades","user":"0x8fcc8f55d7a8cdaee770a9e4112725d4a2c60492"}}
 ```
