@@ -60,13 +60,7 @@
             "group": "WebSocket",
             "openapi": "api-reference/ws.openapi.final.json",
             "pages": [
-              "websocket/overview",
-               "mintlify-tag ws-multiplex",
-              "mintlify-tag ws-liquidations",
-              "mintlify-tag ws-completed-trades",
-              "mintlify-tag ws-fills",
-              "mintlify-tag ws-recent-activity",
-              "mintlify-tag ws-echo"
+              "websocket/overview"
             ]            
           }
         ]
