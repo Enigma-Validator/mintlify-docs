@@ -78,7 +78,7 @@
           },
           {
             "group": "REST API",
-            "openapi": "api-reference/openapi-final.json"
+            "openapi": "api-reference/ws.openapi-final.json"
           },
           {
             "group": "WebSocket",
