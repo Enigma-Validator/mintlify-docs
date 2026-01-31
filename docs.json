@@ -82,7 +82,7 @@
           },
           {
             "group": "WebSocket",
-            "openapi": "api-reference/ws.openapi.final2.json",
+            "openapi": "api-reference/ws-openapi.final2.json",
             "pages": [
               "websocket/overview",
               "websocket/ws-completed-trades",
