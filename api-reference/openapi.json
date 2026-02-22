@@ -3,7 +3,7 @@
   "info": {
     "title": "HL Indexer API",
     "version": "1.0.0",
-    "description": "API to query indexed Hyperliquid trading data.\n\nThis API provides access to stored/indexed trading data:\n- **Fills**: Executed orders and fills (Spot-only or All = Spot + Perp)\n- **Analytics**: Aggregations and statistics based on indexed data\n- **Completed Trades**: Trade objects and their related fills\n- **Users**: User overviews, performance and activity\n\n> Note: No live streaming. Responses are computed from indexed data.\n"
+    "description": "API to query indexed Hyperliquid trading data.\n\nThis API provides access to stored/indexed trading data:\n- **Fills**: Executed orders and fills (Spot-only or All = Spot + Perp)\n- **Analytics**: Aggregations and statistics based on indexed data\n- **Completed Trades**: Trade objects and their related fills\n- **Users**: User overviews, performance and activity\n\n> Note: No live streaming. Responses are computed from indexed data."
   },
   "servers": [
     {
@@ -13,78 +13,34 @@
   ],
   "tags": [
     {
-      "name": "API",
-      "description": "General endpoints and shared response format."
-    },
-    {
       "name": "Fills",
-      "description": "Fills endpoints. `/fills/` = All (Spot + Perp). `/fills/spot/` = Spot only."
+      "description": "Fills endpoints."
     },
     {
       "name": "Analytics",
-      "description": "Aggregations, KPIs, and statistical endpoints based on indexed data."
+      "description": "Aggregations and stats."
     },
     {
       "name": "Completed Trades",
-      "description": "Completed trades and related resources."
+      "description": "Trades and fills."
     },
     {
       "name": "Users",
-      "description": "User profiles, performance, coins, and leaderboards."
+      "description": "User profiles."
     }
   ],
   "paths": {
     "/fills/": {
       "get": {
-        "tags": [
-          "Fills"
-        ],
+        "tags": ["Fills"],
         "summary": "List fills (All = Spot + Perp)",
         "description": "Returns fills across Spot and Perp.",
         "parameters": [
-          {
-            "name": "start_time",
-            "in": "query",
-            "description": "ISO 8601 UTC start time (e.g. 2025-10-08T00:00:00Z)",
-            "schema": {
-              "type": "string",
-              "format": "date-time"
-            }
-          },
-          {
-            "name": "end_time",
-            "in": "query",
-            "description": "ISO 8601 UTC end time",
-            "schema": {
-              "type": "string",
-              "format": "date-time"
-            }
-          },
-          {
-            "name": "coin",
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "limit",
-            "in": "query",
-            "schema": {
-              "type": "integer",
-              "minimum": 1,
-              "maximum": 1000
-            },
-            "description": "Max items to return"
-          },
-          {
-            "name": "cursor",
-            "in": "query",
-            "schema": {
-              "type": "string"
-            },
-            "description": "Pagination cursor"
-          }
+          { "name": "start_time", "in": "query", "schema": { "type": "string", "format": "date-time" } },
+          { "name": "end_time", "in": "query", "schema": { "type": "string", "format": "date-time" } },
+          { "name": "coin", "in": "query", "schema": { "type": "string" } },
+          { "name": "limit", "in": "query", "schema": { "type": "integer", "default": 100 } },
+          { "name": "cursor", "in": "query", "schema": { "type": "string" } }
         ],
         "responses": {
           "200": {
@@ -92,7 +48,12 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/APIResponse"
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean", "default": true },
+                    "message": { "type": "string", "default": "OK" },
+                    "data": { "type": "object" }
+                  }
                 }
               }
             }
@@ -102,131 +63,15 @@
     },
     "/fills/recent": {
       "get": {
-        "tags": [
-          "Fills"
-        ],
+        "tags": ["Fills"],
         "summary": "Get Fills Recent",
-        "description": "Recent fills (live table, 24h TTL) — same filters as `/fills`,\nfaster responses for the recent time window.",
-        "operationId": "get_fills_recent_fills_recent_get",
+        "description": "Recent fills (live table, 24h TTL).",
+        "operationId": "get_fills_recent",
         "parameters": [
-          {
-            "name": "user",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "string",
-              "nullable": true
-            },
-            "description": "User address"
-          },
-          {
-            "name": "coin",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "string",
-              "nullable": true
-            },
-            "description": "Coin symbol"
-          },
-          {
-            "name": "side",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "$ref": "#/components/schemas/SideEnum"
-            },
-            "description": "Side (B=Buy, A=Sell)"
-          },
-          {
-            "name": "size_usd",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "number",
-              "minimum": 0,
-              "nullable": true
-            },
-            "description": "Minimum notional amount (sz * px) in USD"
-          },
-          {
-            "name": "start_time",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "string",
-              "format": "date-time",
-              "nullable": true
-            },
-            "description": "Start time (ISO UTC)"
-          },
-          {
-            "name": "end_time",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "string",
-              "format": "date-time",
-              "nullable": true
-            },
-            "description": "End time (ISO UTC)"
-          },
-          {
-            "name": "offset",
-            "in": "query",
-            "required": false,
-            "deprecated": true,
-            "schema": {
-              "type": "integer",
-              "minimum": 0,
-              "default": 0
-            },
-            "description": "Pagination offset (deprecated, prefer cursor)"
-          },
-          {
-            "name": "limit",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "integer",
-              "maximum": 100,
-              "minimum": 1,
-              "default": 100,
-              "nullable": true
-            },
-            "description": "Max results (cap 1000; None = unlimited)"
-          },
-          {
-            "name": "cursor",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "string",
-              "nullable": true
-            },
-            "description": "Keyset cursor: '<time_ms>:<tid>'"
-          },
-          {
-            "name": "order",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "string",
-              "pattern": "^(?i)(ASC|DESC)$",
-              "default": "DESC"
-            },
-            "description": "Sort by time: ASC or DESC"
-          },
-          {
-            "name": "X-API-Key",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "type": "string",
-              "nullable": true
-            },
-            "description": "API key for authentication"
-          }
+          { "name": "user", "in": "query", "schema": { "type": "string" } },
+          { "name": "coin", "in": "query", "schema": { "type": "string" } },
+          { "name": "side", "in": "query", "schema": { "type": "string", "enum": ["B", "A"] } },
+          { "name": "limit", "in": "query", "schema": { "type": "integer", "default": 100 } }
         ],
         "responses": {
           "200": {
@@ -234,17 +79,11 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/APIResponse"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean", "default": true },
+                    "data": { "type": "array", "items": { "type": "object" } }
+                  }
                 }
               }
             }
@@ -254,243 +93,17 @@
     },
     "/fills/user/{user_address}": {
       "get": {
-        "tags": [
-          "Fills"
-        ],
-        "summary": "User fills (All = Spot + Perp)",
+        "tags": ["Fills"],
+        "summary": "User fills",
         "parameters": [
-          {
-            "name": "user_address",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            },
-            "description": "User address"
-          },
-          {
-            "name": "start_time",
-            "in": "query",
-            "schema": {
-              "type": "string",
-              "format": "date-time"
-            }
-          },
-          {
-            "name": "end_time",
-            "in": "query",
-            "schema": {
-              "type": "string",
-              "format": "date-time"
-            }
-          },
-          {
-            "name": "coin",
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "limit",
-            "in": "query",
-            "schema": {
-              "type": "integer",
-              "minimum": 1,
-              "maximum": 1000
-            }
-          },
-          {
-            "name": "cursor",
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          }
+          { "name": "user_address", "in": "path", "required": true, "schema": { "type": "string" } }
         ],
         "responses": {
           "200": {
             "description": "OK",
             "content": {
               "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/APIResponse"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/fills/count": {
-      "get": {
-        "tags": [
-          "Fills"
-        ],
-        "summary": "Count fills (All = Spot + Perp)",
-        "parameters": [
-          {
-            "name": "start_time",
-            "in": "query",
-            "schema": {
-              "type": "string",
-              "format": "date-time"
-            }
-          },
-          {
-            "name": "end_time",
-            "in": "query",
-            "schema": {
-              "type": "string",
-              "format": "date-time"
-            }
-          },
-          {
-            "name": "coin",
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/APIResponse"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/fills/spot/": {
-      "get": {
-        "tags": [
-          "Fills"
-        ],
-        "summary": "List Spot fills only",
-        "parameters": [
-          {
-            "name": "start_time",
-            "in": "query",
-            "schema": {
-              "type": "string",
-              "format": "date-time"
-            }
-          },
-          {
-            "name": "end_time",
-            "in": "query",
-            "schema": {
-              "type": "string",
-              "format": "date-time"
-            }
-          },
-          {
-            "name": "coin",
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "limit",
-            "in": "query",
-            "schema": {
-              "type": "integer",
-              "minimum": 1,
-              "maximum": 1000
-            }
-          },
-          {
-            "name": "cursor",
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/APIResponse"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/fills/spot/user/{user_address}": {
-      "get": {
-        "tags": [
-          "Fills"
-        ],
-        "summary": "User Spot fills only",
-        "parameters": [
-          {
-            "name": "user_address",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "start_time",
-            "in": "query",
-            "schema": {
-              "type": "string",
-              "format": "date-time"
-            }
-          },
-          {
-            "name": "end_time",
-            "in": "query",
-            "schema": {
-              "type": "string",
-              "format": "date-time"
-            }
-          },
-          {
-            "name": "coin",
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "limit",
-            "in": "query",
-            "schema": {
-              "type": "integer",
-              "minimum": 1,
-              "maximum": 1000
-            }
-          },
-          {
-            "name": "cursor",
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/APIResponse"
-                }
+                "schema": { "type": "object", "properties": { "success": { "type": "boolean" }, "data": { "type": "array", "items": { "type": "object" } } } }
               }
             }
           }
@@ -499,44 +112,17 @@
     },
     "/analytics/fills/stats": {
       "get": {
-        "tags": [
-          "Analytics"
-        ],
+        "tags": ["Analytics"],
         "summary": "Fills statistics",
-        "description": "Aggregated stats derived from indexed fills.",
         "parameters": [
-          {
-            "name": "start_time",
-            "in": "query",
-            "schema": {
-              "type": "string",
-              "format": "date-time"
-            }
-          },
-          {
-            "name": "end_time",
-            "in": "query",
-            "schema": {
-              "type": "string",
-              "format": "date-time"
-            }
-          },
-          {
-            "name": "coin",
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          }
+          { "name": "coin", "in": "query", "schema": { "type": "string" } }
         ],
         "responses": {
           "200": {
             "description": "OK",
             "content": {
               "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/APIResponse"
-                }
+                "schema": { "type": "object" }
               }
             }
           }
@@ -545,53 +131,17 @@
     },
     "/analytics/liquidations/stats": {
       "get": {
-        "tags": [
-          "Analytics"
-        ],
-        "summary": "Get Liquidations Stats",
-        "description": "Liquidation statistics for the last `days` days window.",
-        "operationId": "get_liquidations_stats_analytics_liquidations_stats_get",
+        "tags": ["Analytics"],
+        "summary": "Liquidation Stats",
         "parameters": [
-          {
-            "name": "days",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "integer",
-              "maximum": 30,
-              "minimum": 1,
-              "default": 1
-            },
-            "description": "Window in days"
-          },
-          {
-            "name": "X-API-Key",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "type": "string",
-              "nullable": true
-            }
-          }
+          { "name": "days", "in": "query", "schema": { "type": "integer", "default": 1 } }
         ],
         "responses": {
           "200": {
-            "description": "Successful Response",
+            "description": "OK",
             "content": {
               "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/APIResponse"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
+                "schema": { "type": "object" }
               }
             }
           }
@@ -600,234 +150,14 @@
     },
     "/completed-trades/": {
       "get": {
-        "tags": [
-          "Completed Trades"
-        ],
+        "tags": ["Completed Trades"],
         "summary": "List completed trades",
-        "security": [
-          {
-            "X-API-Key": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "start_time",
-            "in": "query",
-            "schema": {
-              "type": "string",
-              "format": "date-time"
-            }
-          },
-          {
-            "name": "end_time",
-            "in": "query",
-            "schema": {
-              "type": "string",
-              "format": "date-time"
-            }
-          },
-          {
-            "name": "coin",
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "limit",
-            "in": "query",
-            "schema": {
-              "type": "integer",
-              "minimum": 1,
-              "maximum": 1000
-            }
-          },
-          {
-            "name": "cursor",
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
         "responses": {
           "200": {
             "description": "OK",
             "content": {
               "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/APIResponse"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/completed-trades/summary": {
-      "get": {
-        "tags": [
-          "Completed Trades"
-        ],
-        "summary": "Completed trades summary",
-        "security": [
-          {
-            "X-API-Key": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "start_time",
-            "in": "query",
-            "schema": {
-              "type": "string",
-              "format": "date-time"
-            }
-          },
-          {
-            "name": "end_time",
-            "in": "query",
-            "schema": {
-              "type": "string",
-              "format": "date-time"
-            }
-          },
-          {
-            "name": "coin",
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/APIResponse"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/completed-trades/{trade_id}/fills": {
-      "get": {
-        "tags": [
-          "Completed Trades"
-        ],
-        "summary": "Fills for a completed trade",
-        "parameters": [
-          {
-            "name": "trade_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/APIResponse"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/users/{user}/overview": {
-      "get": {
-        "tags": [
-          "Users"
-        ],
-        "summary": "User overview",
-        "parameters": [
-          {
-            "name": "user",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/APIResponse"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/users/{user}/performance": {
-      "get": {
-        "tags": [
-          "Users"
-        ],
-        "summary": "User performance",
-        "parameters": [
-          {
-            "name": "user",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/APIResponse"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/users/{user}/coins": {
-      "get": {
-        "tags": [
-          "Users"
-        ],
-        "summary": "User coins",
-        "parameters": [
-          {
-            "name": "user",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/APIResponse"
-                }
+                "schema": { "type": "object" }
               }
             }
           }
@@ -836,38 +166,14 @@
     },
     "/users/leaderboard": {
       "get": {
-        "tags": [
-          "Users"
-        ],
+        "tags": ["Users"],
         "summary": "Leaderboard",
         "responses": {
           "200": {
             "description": "OK",
             "content": {
               "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/APIResponse"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/users/active": {
-      "get": {
-        "tags": [
-          "Users"
-        ],
-        "summary": "Active users",
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/APIResponse"
-                }
+                "schema": { "type": "object" }
               }
             }
           }
@@ -880,101 +186,11 @@
       "X-API-Key": {
         "type": "apiKey",
         "in": "header",
-        "name": "X-API-Key",
-        "description": "Generate an API key from [https://www.app.hypedexer.com/dashboard/keys](https://www.app.hypedexer.com/dashboard/keys) and include it in every request header as `X-API-Key: <your_key>`."
-      }
-    },
-    "schemas": {
-      "APIResponse": {
-        "type": "object",
-        "title": "APIResponse",
-        "description": "Generic API response",
-        "properties": {
-          "success": {
-            "type": "boolean",
-            "title": "Success",
-            "default": true
-          },
-          "message": {
-            "type": "string",
-            "title": "Message",
-            "default": "OK"
-          },
-          "data": {
-            "title": "Data"
-          },
-          "total_count": {
-            "title": "Total Count",
-            "type": "integer",
-            "nullable": true
-          },
-          "execution_time_ms": {
-            "title": "Execution Time Ms",
-            "type": "number",
-            "nullable": true
-          }
-        }
-      },
-      "SideEnum": {
-        "type": "string",
-        "enum": [
-          "B",
-          "A"
-        ],
-        "title": "SideEnum",
-        "description": "Trade/fill sides"
-      },
-      "HTTPValidationError": {
-        "type": "object",
-        "title": "HTTPValidationError",
-        "properties": {
-          "detail": {
-            "type": "array",
-            "title": "Detail",
-            "items": {
-              "$ref": "#/components/schemas/ValidationError"
-            }
-          }
-        }
-      },
-      "ValidationError": {
-        "type": "object",
-        "title": "ValidationError",
-        "required": [
-          "loc",
-          "msg",
-          "type"
-        ],
-        "properties": {
-          "loc": {
-            "type": "array",
-            "title": "Location",
-            "items": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "integer"
-                }
-              ]
-            }
-          },
-          "msg": {
-            "type": "string",
-            "title": "Message"
-          },
-          "type": {
-            "type": "string",
-            "title": "Error Type"
-          }
-        }
+        "name": "X-API-Key"
       }
     }
   },
   "security": [
-    {
-      "X-API-Key": []
-    }
+    { "X-API-Key": [] }
   ]
 }
