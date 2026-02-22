@@ -1,5 +1,5 @@
 {
-  "openapi": "3.1.0",
+  "openapi": "3.0.3",
   "info": {
     "title": "HL Indexer API",
     "version": "1.0.0",
@@ -114,105 +114,62 @@
             "in": "query",
             "required": false,
             "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ]
+              "type": "string",
+              "nullable": true
             },
-            "description": "User address",
-            "title": "User"
+            "description": "User address"
           },
           {
             "name": "coin",
             "in": "query",
             "required": false,
             "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ]
+              "type": "string",
+              "nullable": true
             },
-            "description": "Coin symbol",
-            "title": "Coin"
+            "description": "Coin symbol"
           },
           {
             "name": "side",
             "in": "query",
             "required": false,
             "schema": {
-              "anyOf": [
-                {
-                  "$ref": "#/components/schemas/SideEnum"
-                },
-                {
-                  "type": "null"
-                }
-              ]
+              "$ref": "#/components/schemas/SideEnum"
             },
-            "description": "Side (B=Buy, A=Sell)",
-            "title": "Side"
+            "description": "Side (B=Buy, A=Sell)"
           },
           {
             "name": "size_usd",
             "in": "query",
             "required": false,
             "schema": {
-              "anyOf": [
-                {
-                  "type": "number",
-                  "minimum": 0
-                },
-                {
-                  "type": "null"
-                }
-              ]
+              "type": "number",
+              "minimum": 0,
+              "nullable": true
             },
-            "description": "Minimum notional amount (sz * px) in USD",
-            "title": "Size Usd"
+            "description": "Minimum notional amount (sz * px) in USD"
           },
           {
             "name": "start_time",
             "in": "query",
             "required": false,
             "schema": {
-              "anyOf": [
-                {
-                  "type": "string",
-                  "format": "date-time"
-                },
-                {
-                  "type": "null"
-                }
-              ]
+              "type": "string",
+              "format": "date-time",
+              "nullable": true
             },
-            "description": "Start time (ISO UTC)",
-            "title": "Start Time"
+            "description": "Start time (ISO UTC)"
           },
           {
             "name": "end_time",
             "in": "query",
             "required": false,
             "schema": {
-              "anyOf": [
-                {
-                  "type": "string",
-                  "format": "date-time"
-                },
-                {
-                  "type": "null"
-                }
-              ]
+              "type": "string",
+              "format": "date-time",
+              "nullable": true
             },
-            "description": "End time (ISO UTC)",
-            "title": "End Time"
+            "description": "End time (ISO UTC)"
           },
           {
             "name": "offset",
@@ -224,46 +181,30 @@
               "minimum": 0,
               "default": 0
             },
-            "description": "Pagination offset (deprecated, prefer cursor)",
-            "title": "Offset"
+            "description": "Pagination offset (deprecated, prefer cursor)"
           },
           {
             "name": "limit",
             "in": "query",
             "required": false,
             "schema": {
-              "anyOf": [
-                {
-                  "type": "integer",
-                  "maximum": 100,
-                  "minimum": 1,
-                  "exclusiveMaximum": false
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "default": 100
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1,
+              "default": 100,
+              "nullable": true
             },
-            "description": "Max results (cap 1000; None = unlimited)\n\nTo request more than 100 results, use an external client (outside Swagger/Redoc).",
-            "title": "Limit"
+            "description": "Max results (cap 1000; None = unlimited)"
           },
           {
             "name": "cursor",
             "in": "query",
             "required": false,
             "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ]
+              "type": "string",
+              "nullable": true
             },
-            "description": "Keyset cursor: '<time_ms>:<tid>'",
-            "title": "Cursor"
+            "description": "Keyset cursor: '<time_ms>:<tid>'"
           },
           {
             "name": "order",
@@ -274,25 +215,17 @@
               "pattern": "^(?i)(ASC|DESC)$",
               "default": "DESC"
             },
-            "description": "Sort by time: ASC or DESC",
-            "title": "Order"
+            "description": "Sort by time: ASC or DESC"
           },
           {
             "name": "X-API-Key",
             "in": "header",
             "required": false,
             "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ]
+              "type": "string",
+              "nullable": true
             },
-            "description": "API key for authentication (required by Cloudflare)",
-            "title": "X-Api-Key"
+            "description": "API key for authentication"
           }
         ],
         "responses": {
@@ -627,9 +560,7 @@
               "type": "integer",
               "maximum": 30,
               "minimum": 1,
-              "description": "Window in days",
-              "default": 1,
-              "title": "Days"
+              "default": 1
             },
             "description": "Window in days"
           },
@@ -638,16 +569,9 @@
             "in": "header",
             "required": false,
             "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ]
-            },
-            "title": "X-Api-Key"
+              "type": "string",
+              "nullable": true
+            }
           }
         ],
         "responses": {
@@ -981,25 +905,13 @@
           },
           "total_count": {
             "title": "Total Count",
-            "anyOf": [
-              {
-                "type": "integer"
-              },
-              {
-                "type": "null"
-              }
-            ]
+            "type": "integer",
+            "nullable": true
           },
           "execution_time_ms": {
             "title": "Execution Time Ms",
-            "anyOf": [
-              {
-                "type": "number"
-              },
-              {
-                "type": "null"
-              }
-            ]
+            "type": "number",
+            "nullable": true
           }
         }
       },
