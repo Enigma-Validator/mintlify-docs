@@ -1,0 +1,91 @@
+---
+title: "Official Hyperliquid L2Book Websocket"
+description: Subscribe to L2Book streams for any tokens you wants.
+---
+
+# Hyperliquid L2Book WebSocket Access
+
+You can use the following WebSocket endpoint to retrieve the **Hyperliquid L2 order book (L2Book)** without any rate limits or usage restrictions:
+
+```text
+wss://api.hypedexer.com/ws
+```
+
+This endpoint allows you to subscribe to real-time order book updates for any supported trading pair on Hyperliquid.
+
+## Features
+
+- No rate limits
+- No request quotas
+- Real-time L2 order book updates
+- Simple WebSocket subscription model
+
+## WebSocket Subscription
+
+To receive L2 order book updates, send the following JSON message after connecting to the WebSocket:
+
+```json
+{
+  "method": "subscribe",
+  "subscription": {
+    "type": "l2Book",
+    "coin": "HYPE"
+  }
+}
+```
+
+### Parameters
+
+| Field               | Description                               |
+| ------------------- | ----------------------------------------- |
+| `method`            | The action to perform (`subscribe`)       |
+| `subscription.type` | The data stream type (`l2Book`)           |
+| `subscription.coin` | The asset symbol you want to subscribe to |
+
+## Example Usage
+
+### Using wscat
+
+```bash
+wscat -c wss://api.hypedexer.com/ws
+```
+
+Then send:
+
+```json
+{
+  "method": "subscribe",
+  "subscription": {
+    "type": "l2Book",
+    "coin": "HYPE"
+  }
+}
+```
+
+You will then start receiving real-time L2 order book updates for **HYPE**.
+
+## Example Using JavaScript
+
+```javascript
+const ws = new WebSocket("wss://api.hypedexer.com/ws");
+
+ws.onopen = () => {
+  ws.send(JSON.stringify({
+    method: "subscribe",
+    subscription: {
+      type: "l2Book",
+      coin: "HYPE"
+    }
+  }));
+};
+
+ws.onmessage = (event) => {
+  const data = JSON.parse(event.data);
+  console.log(data);
+};
+```
+
+## Notes
+
+- The connection is persistent and will continuously stream updates.
+- You can subscribe to multiple markets by sending additional subscription messages.
