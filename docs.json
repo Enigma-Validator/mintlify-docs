@@ -85,11 +85,11 @@
             "openapi": "api-reference/ws-openapi.final2.json",
             "pages": [
               "websocket/overview",
+              "websocket/official-websocket",
               "websocket/ws-completed-trades",
               "websocket/ws-fills-spot",
               "websocket/ws-recent-activity",
-              "websocket/ws-liquidations",
-              "websocket/official-websocket"
+              "websocket/ws-liquidations"
             ]
           }
         ]
