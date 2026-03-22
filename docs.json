@@ -80,7 +80,7 @@
             "group": "REST API",
             "openapi": "api-reference/openapi.json",
             "pages": [
-              "untitled-page"
+              "api-reference/live"
             ]
           },
           {
