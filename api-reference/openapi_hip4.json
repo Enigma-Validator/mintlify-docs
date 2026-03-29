@@ -7,7 +7,7 @@
   },
   "servers": [
     {
-      "url": "https://testnet-api.hypedexer.com",
+      "url": "https://api.hypedexer.com/testnet",
       "description": "Testnet"
     }
   ],
@@ -338,7 +338,18 @@
       }
     }
   },
+  "security": [
+    { "X-API-Key": [] }
+  ],
   "components": {
+    "securitySchemes": {
+      "X-API-Key": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "X-API-Key",
+        "description": "Include in every request header as `X-API-Key: <your_key>`."
+      }
+    },
     "schemas": {
       "Market": {
         "type": "object",
