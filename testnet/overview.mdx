@@ -1,0 +1,60 @@
+---
+title: "Testnet — HIP-4 Prediction Markets"
+description: "Indexed data for Hyperliquid HIP-4 prediction markets on testnet"
+---
+
+<Note>
+  HIP-4 is currently **testnet-only**. These endpoints are not available on mainnet yet.
+</Note>
+
+## What is HIP-4?
+
+HIP-4 introduces on-chain prediction markets (outcome trading) on Hyperliquid. Users can trade binary outcomes (Yes/No) on questions like "BTC above 66220 on Mar 29?" or multi-outcome questions like "What will Hypurr eat the most of in Feb 2026?"
+
+## Base URL
+
+https://api.hypedexer.com/testnet
+
+
+## Key concepts
+
+| Concept | Description |
+|---------|-------------|
+| **Market** (`#` coin) | A prediction market outcome (e.g. `#24371` = "BTC above 66220") |
+| **Outcome Token** (`@` coin) | The spot-tradeable token for an outcome (e.g. `@10` = CHUTORO) |
+| **Question** | Groups related outcomes (e.g. question 1 → Akami, Otoro, Canned Tuna) |
+| **Settlement** | Resolution of a market (settle_fraction: 0 = No, 1 = Yes) |
+
+## Fee behavior
+
+<Warning>
+  Prediction market fills (`#` coins) currently have **fee = 0** on testnet — the SetOutcomeFeeScale governance action has not been activated.
+</Warning>
+
+Outcome token fills (`@` coins) are charged **normal spot fees** (taker/maker rates). The `fee_usdc` field normalizes fees to USD equivalent.
+
+## Quick examples
+
+
+<CodeGroup> 
+
+```bash Markets for a question
+
+curl -X 'GET' \
+  'https://api.hypedexer.com/testnet/hip4/markets?question_id=1' \
+  -H 'accept: application/json' \
+  -H 'X-API-Key: YOUR_API_KEY'
+
+curl -X 'GET' \
+  'https://api.hypedexer.com/testnet/hip4/fills?user=0x079f56bfd27f71cbd278c27c7b121e7ef180a5be' \
+  -H 'accept: application/json' \
+  -H 'X-API-Key: YOUR_API_KEY'
+
+curl -X 'GET' \
+  'https://api.hypedexer.com/testnet/hip4/fees?user=0x1733d1945f023dfece04363d26f032ef069accdc' \
+  -H 'accept: application/json' \
+  -H 'X-API-Key: YOUR_API_KEY'
+  
+```
+
+</CodeGroup> 

@@ -24,7 +24,7 @@
         {
           "anchor": "Telegram",
           "icon": "telegram",
-          "href": "https://t.me/HypedexerCommunity"
+          "href": "https://t.me/c/EnigmaValidatorCommunity/13"
         },
         {
           "anchor": "Email",
@@ -96,7 +96,21 @@
             ]
           }
         ]
-      }
+      },{
+  "tab": "Testnet (HIP-4)",
+  "groups": [
+    {
+      "group": "HIP-4 Prediction Markets",
+      "pages": [
+        "testnet/overview"
+      ]
+    },
+    {
+      "group": "REST API",
+      "openapi": "api-reference/openapi-hip4.json"
+    }
+  ]
+}
     ]
   },
   "logo": {
