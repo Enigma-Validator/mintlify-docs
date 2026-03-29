@@ -1,0 +1,473 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "HL Indexer — HIP-4 Prediction Markets API",
+    "version": "1.0.0",
+    "description": "API to query indexed HIP-4 prediction market data on Hyperliquid **testnet**.\n\nHIP-4 introduces on-chain prediction markets (outcome trading). This API indexes:\n- **Markets**: Prediction market definitions with Yes/No outcomes\n- **Questions**: Groups of related outcomes (e.g. \"What will Hypurr eat?\" → Akami, Otoro, Canned Tuna)\n- **Fills**: All executed trades on prediction markets (`#` coins) and outcome spot tokens (`@` coins)\n- **Fees**: Aggregated fee breakdown per user, coin, and day\n- **Settlements**: Market resolution events\n- **Outcome Tokens**: Spot token metadata for tradeable outcome assets\n- **Fee Scales**: Governance events for global outcome fee configuration\n- **User Actions**: On-chain user actions (Split, Merge, Negate outcomes)\n\n> **Note**: This is a testnet-only API. HIP-4 is not yet live on mainnet.\n\n### Fee behavior\n- `#` prediction market fills currently have `fee = 0` (the `SetOutcomeFeeScale` governance action has not been activated on testnet)\n- `@` outcome token fills (spot) are charged normal spot fees (taker/maker rates)\n- `fee_usdc` is the fee normalized to USD equivalent\n\n### Pagination\nAll list endpoints support `limit` (default 100, max 10000) and `offset` (default 0).\n\n### Time filters\n- `start` / `end` on fills: epoch **milliseconds**\n- `start` / `end` on other endpoints: epoch **milliseconds**"
+  },
+  "servers": [
+    {
+      "url": "https://api.hypedexer.com/testnet",
+      "description": "Testnet"
+    }
+  ],
+  "tags": [
+    { "name": "Markets", "description": "Prediction market definitions and metadata." },
+    { "name": "Questions", "description": "Prediction questions grouping multiple outcomes." },
+    { "name": "Fills", "description": "Prediction market and outcome token fills." },
+    { "name": "Fees", "description": "Aggregated fee analytics." },
+    { "name": "Settlements", "description": "Market resolution events." },
+    { "name": "Outcome Tokens", "description": "Spot token metadata for outcome assets." },
+    { "name": "Fee Scales", "description": "Governance fee scale events." },
+    { "name": "User Actions", "description": "On-chain user outcome actions." }
+  ],
+  "paths": {
+    "/hip4/markets": {
+      "get": {
+        "tags": ["Markets"],
+        "summary": "List prediction markets",
+        "description": "Returns prediction market definitions. Each market is an outcome (e.g. \"Canned Tuna\") with Yes/No sides. Use `question_id` to get all outcomes belonging to a question.",
+        "operationId": "listMarkets",
+        "parameters": [
+          { "name": "outcome_id", "in": "query", "description": "Filter by outcome ID", "schema": { "type": "integer" } },
+          { "name": "question_id", "in": "query", "description": "Filter by question ID — returns all outcomes for that question", "schema": { "type": "integer" } },
+          { "name": "class", "in": "query", "description": "Filter by class (e.g. `priceBinary`)", "schema": { "type": "string" } },
+          { "name": "underlying", "in": "query", "description": "Filter by underlying asset (e.g. `BTC`, `HYPE`)", "schema": { "type": "string" } },
+          { "name": "limit", "in": "query", "schema": { "type": "integer", "default": 100, "maximum": 10000 } },
+          { "name": "offset", "in": "query", "schema": { "type": "integer", "default": 0 } }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": { "$ref": "#/components/schemas/Market" }
+                },
+                "example": [
+                  {
+                    "outcome_id": 11,
+                    "coin": "#11",
+                    "name": "Canned Tuna",
+                    "description": "Affordable tuna for bear markets",
+                    "class": "",
+                    "underlying": "",
+                    "expiry": "",
+                    "target_price": 0,
+                    "period": "",
+                    "side_specs": "[{\"name\":\"Yes\"},{\"name\":\"No\"}]",
+                    "question_id": 1,
+                    "quote_token": 0,
+                    "block_time": "2026-03-29 23:12:55.308000000",
+                    "question_name": "What will Hypurr eat the most of in Feb 2026?",
+                    "question_description": "Hypurr has committed to weighing and recording daily food intake in a food journal."
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    "/hip4/questions": {
+      "get": {
+        "tags": ["Questions"],
+        "summary": "List prediction questions",
+        "description": "Returns prediction questions. Each question groups multiple outcomes (e.g. Akami, Otoro, Canned Tuna) with a fallback outcome.",
+        "operationId": "listQuestions",
+        "parameters": [
+          { "name": "question_id", "in": "query", "description": "Filter by question ID", "schema": { "type": "integer" } },
+          { "name": "limit", "in": "query", "schema": { "type": "integer", "default": 100, "maximum": 10000 } },
+          { "name": "offset", "in": "query", "schema": { "type": "integer", "default": 0 } }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": { "$ref": "#/components/schemas/Question" }
+                },
+                "example": [
+                  {
+                    "question_id": 1,
+                    "name": "What will Hypurr eat the most of in Feb 2026?",
+                    "description": "Hypurr has committed to weighing and recording daily food intake in a food journal.",
+                    "fallback_outcome": 13,
+                    "named_outcomes": [10, 11, 12],
+                    "settled_named_outcomes": [],
+                    "updated_at": "2026-03-29 23:12:55.370"
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    "/hip4/fills": {
+      "get": {
+        "tags": ["Fills"],
+        "summary": "List prediction market fills",
+        "description": "Returns executed fills on prediction markets (`#` coins) and outcome spot tokens (`@` coins). Joined with market metadata.\n\n**Note:** `#` coin fills currently have `fee = 0` on testnet. `@` coin fills have normal spot fees.",
+        "operationId": "listFills",
+        "parameters": [
+          { "name": "user", "in": "query", "description": "Filter by user wallet address (0x...)", "schema": { "type": "string" } },
+          { "name": "coin", "in": "query", "description": "Filter by coin (e.g. `#24371` or `@10`). Encode `#` as `%23`.", "schema": { "type": "string" } },
+          { "name": "outcome_id", "in": "query", "description": "Filter by outcome ID", "schema": { "type": "integer" } },
+          { "name": "start", "in": "query", "description": "Start time (epoch milliseconds)", "schema": { "type": "integer", "format": "int64" } },
+          { "name": "end", "in": "query", "description": "End time (epoch milliseconds)", "schema": { "type": "integer", "format": "int64" } },
+          { "name": "limit", "in": "query", "schema": { "type": "integer", "default": 100, "maximum": 10000 } },
+          { "name": "offset", "in": "query", "schema": { "type": "integer", "default": 0 } }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": { "$ref": "#/components/schemas/Fill" }
+                },
+                "example": [
+                  {
+                    "user": "0x079f56bfd27f71cbd278c27c7b121e7ef180a5be",
+                    "coin": "#24371",
+                    "outcome_id": 24371,
+                    "px": 0.625,
+                    "sz": 81,
+                    "side": "B",
+                    "time_ms": 1774703581788,
+                    "dir": "Buy",
+                    "closedPnl": 0,
+                    "hash": "0x4ad88d690d...",
+                    "oid": 50583850248,
+                    "tid": 68702993520749,
+                    "fee": 0,
+                    "feeToken": "+24371",
+                    "fee_usdc": 0,
+                    "typeTrade": "perp",
+                    "trade_id": "trade_#24371_7182529b",
+                    "market_name": "Recurring",
+                    "market_description": "class:priceBinary|underlying:BTC|expiry:20260329-0500|targetPrice:66220|period:1d"
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    "/hip4/fees": {
+      "get": {
+        "tags": ["Fees"],
+        "summary": "Aggregated fees per user / coin / day",
+        "description": "Returns fee aggregations grouped by user, coin, feeToken, and date. Only includes fills where `fee > 0`.\n\n- `total_fee_raw`: sum of fees in the original fee token\n- `total_fee_usdc`: sum of fees normalized to USD\n- `total_notional`: total traded volume (px * sz) in USD\n- `effective_rate`: fee / notional (multiply by 10000 for bps)",
+        "operationId": "listFees",
+        "parameters": [
+          { "name": "user", "in": "query", "description": "Filter by user wallet address", "schema": { "type": "string" } },
+          { "name": "coin", "in": "query", "description": "Filter by coin", "schema": { "type": "string" } },
+          { "name": "start", "in": "query", "description": "Start time (epoch milliseconds)", "schema": { "type": "integer", "format": "int64" } },
+          { "name": "end", "in": "query", "description": "End time (epoch milliseconds)", "schema": { "type": "integer", "format": "int64" } },
+          { "name": "limit", "in": "query", "schema": { "type": "integer", "default": 100, "maximum": 10000 } },
+          { "name": "offset", "in": "query", "schema": { "type": "integer", "default": 0 } }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": { "$ref": "#/components/schemas/FeeAggregation" }
+                },
+                "example": [
+                  {
+                    "user": "0x1733d1945f023dfece04363d26f032ef069accdc",
+                    "coin": "@10",
+                    "feeToken": "CHUTORO",
+                    "date": "2026-03-29",
+                    "fills": 1,
+                    "total_fee_raw": 0.01,
+                    "total_fee_usdc": 0.006973,
+                    "total_notional": 10.4595,
+                    "effective_rate": 0.0006666666666666666
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    "/hip4/settlements": {
+      "get": {
+        "tags": ["Settlements"],
+        "summary": "List market settlements",
+        "description": "Returns settlement (resolution) events for prediction markets. `settle_fraction` indicates the outcome result (0 = No, 1 = Yes).",
+        "operationId": "listSettlements",
+        "parameters": [
+          { "name": "outcome_id", "in": "query", "description": "Filter by outcome ID", "schema": { "type": "integer" } },
+          { "name": "start", "in": "query", "description": "Start time (epoch milliseconds)", "schema": { "type": "integer", "format": "int64" } },
+          { "name": "end", "in": "query", "description": "End time (epoch milliseconds)", "schema": { "type": "integer", "format": "int64" } },
+          { "name": "limit", "in": "query", "schema": { "type": "integer", "default": 100, "maximum": 10000 } },
+          { "name": "offset", "in": "query", "schema": { "type": "integer", "default": 0 } }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": { "$ref": "#/components/schemas/Settlement" }
+                },
+                "example": [
+                  {
+                    "outcome_id": 2614,
+                    "settle_fraction": 0,
+                    "details": "price:41",
+                    "broadcaster": "0x59900d101574c04a6b8a647feb3db1ab48eb320a",
+                    "block_time": "2026-03-29 23:00:03.344729225",
+                    "block_height": 673791002,
+                    "nonce": 1774825135961
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    "/hip4/outcome-tokens": {
+      "get": {
+        "tags": ["Outcome Tokens"],
+        "summary": "List outcome token metadata",
+        "description": "Returns spot token metadata for outcome assets. Maps outcome IDs to their tradeable spot tokens (e.g. outcome 11 → CHUTORO on spot pair @11).",
+        "operationId": "listOutcomeTokens",
+        "parameters": [
+          { "name": "outcome_id", "in": "query", "description": "Filter by outcome ID", "schema": { "type": "integer" } },
+          { "name": "coin", "in": "query", "description": "Filter by spot coin (e.g. `@11`)", "schema": { "type": "string" } },
+          { "name": "limit", "in": "query", "schema": { "type": "integer", "default": 100, "maximum": 10000 } },
+          { "name": "offset", "in": "query", "schema": { "type": "integer", "default": 0 } }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": { "$ref": "#/components/schemas/OutcomeToken" }
+                },
+                "example": [
+                  {
+                    "outcome_id": 11,
+                    "coin": "@11",
+                    "spot_index": 11,
+                    "spot_name": "CHUTORO",
+                    "deployer_fee_share": 0,
+                    "sz_decimals": 2,
+                    "wei_decimals": 2,
+                    "updated_at": "2026-03-29 23:12:55.368"
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    "/hip4/fee-scales": {
+      "get": {
+        "tags": ["Fee Scales"],
+        "summary": "List fee scale governance events",
+        "description": "Returns `SetOutcomeFeeScale` governance events. These control the global fee scale for prediction markets. Currently empty on testnet (fee scale has not been activated).",
+        "operationId": "listFeeScales",
+        "parameters": [
+          { "name": "start", "in": "query", "description": "Start time (epoch milliseconds)", "schema": { "type": "integer", "format": "int64" } },
+          { "name": "end", "in": "query", "description": "End time (epoch milliseconds)", "schema": { "type": "integer", "format": "int64" } },
+          { "name": "limit", "in": "query", "schema": { "type": "integer", "default": 100, "maximum": 10000 } },
+          { "name": "offset", "in": "query", "schema": { "type": "integer", "default": 0 } }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": { "$ref": "#/components/schemas/FeeScale" }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/hip4/user-actions": {
+      "get": {
+        "tags": ["User Actions"],
+        "summary": "List user outcome actions",
+        "description": "Returns on-chain user actions: `SplitOutcome`, `MergeOutcome`, `NegateOutcome`, `MergeQuestion`, `RegisterQuestion`, `ChangeOutcomeDescription`, `ChangeQuestionDescription`.",
+        "operationId": "listUserActions",
+        "parameters": [
+          { "name": "user", "in": "query", "description": "Filter by user wallet address", "schema": { "type": "string" } },
+          { "name": "action_type", "in": "query", "description": "Filter by action type", "schema": { "type": "string", "enum": ["SplitOutcome", "MergeOutcome", "NegateOutcome", "MergeQuestion", "RegisterQuestion", "ChangeOutcomeDescription", "ChangeQuestionDescription"] } },
+          { "name": "outcome_id", "in": "query", "description": "Filter by outcome ID", "schema": { "type": "integer" } },
+          { "name": "start", "in": "query", "description": "Start time (epoch milliseconds)", "schema": { "type": "integer", "format": "int64" } },
+          { "name": "end", "in": "query", "description": "End time (epoch milliseconds)", "schema": { "type": "integer", "format": "int64" } },
+          { "name": "limit", "in": "query", "schema": { "type": "integer", "default": 100, "maximum": 10000 } },
+          { "name": "offset", "in": "query", "schema": { "type": "integer", "default": 0 } }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": { "$ref": "#/components/schemas/UserAction" }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "security": [
+    { "X-API-Key": [] }
+  ],
+  "components": {
+    "securitySchemes": {
+      "X-API-Key": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "X-API-Key",
+        "description": "Include in every request header as `X-API-Key: <your_key>`."
+      }
+    },
+    "schemas": {
+      "Market": {
+        "type": "object",
+        "properties": {
+          "outcome_id": { "type": "integer", "description": "Unique outcome identifier" },
+          "coin": { "type": "string", "description": "Prediction market coin (e.g. `#11`)" },
+          "name": { "type": "string", "description": "Outcome name (e.g. `Canned Tuna`, `Recurring`)" },
+          "description": { "type": "string", "description": "Outcome description or structured metadata for priceBinary" },
+          "class": { "type": "string", "description": "Market class (e.g. `priceBinary`). Empty for custom markets." },
+          "underlying": { "type": "string", "description": "Underlying asset (e.g. `BTC`, `HYPE`). Empty for custom markets." },
+          "expiry": { "type": "string", "description": "Expiry datetime (e.g. `20260329-0500`)" },
+          "target_price": { "type": "number", "description": "Target price for priceBinary markets" },
+          "period": { "type": "string", "description": "Period (e.g. `15m`, `1d`)" },
+          "side_specs": { "type": "string", "description": "JSON array of side names (e.g. `[{\"name\":\"Yes\"},{\"name\":\"No\"}]`)" },
+          "question_id": { "type": "integer", "nullable": true, "description": "Parent question ID (null if standalone)" },
+          "quote_token": { "type": "integer", "description": "Quote token index" },
+          "block_time": { "type": "string", "description": "Creation timestamp" },
+          "question_name": { "type": "string", "description": "Parent question name (empty if no question)" },
+          "question_description": { "type": "string", "description": "Parent question description" }
+        }
+      },
+      "Question": {
+        "type": "object",
+        "properties": {
+          "question_id": { "type": "integer", "description": "Unique question identifier" },
+          "name": { "type": "string", "description": "Question text" },
+          "description": { "type": "string", "description": "Question description / rules" },
+          "fallback_outcome": { "type": "integer", "description": "Fallback outcome ID (e.g. \"Other\")" },
+          "named_outcomes": { "type": "array", "items": { "type": "integer" }, "description": "List of outcome IDs belonging to this question" },
+          "settled_named_outcomes": { "type": "array", "items": { "type": "integer" }, "description": "Already settled outcome IDs" },
+          "updated_at": { "type": "string", "description": "Last update timestamp" }
+        }
+      },
+      "Fill": {
+        "type": "object",
+        "properties": {
+          "user": { "type": "string", "description": "Wallet address" },
+          "coin": { "type": "string", "description": "Coin (`#ID` for prediction, `@ID` for spot outcome token)" },
+          "outcome_id": { "type": "integer", "description": "Outcome ID extracted from coin" },
+          "px": { "type": "number", "description": "Execution price" },
+          "sz": { "type": "number", "description": "Size (number of contracts/tokens)" },
+          "side": { "type": "string", "enum": ["B", "A"], "description": "Side: B=Buy, A=Sell" },
+          "time_ms": { "type": "integer", "format": "int64", "description": "Execution time (epoch ms)" },
+          "dir": { "type": "string", "description": "Direction (Buy, Sell, Settlement)" },
+          "closedPnl": { "type": "number", "description": "Realized PnL" },
+          "hash": { "type": "string", "description": "Transaction hash" },
+          "oid": { "type": "integer", "format": "int64", "description": "Order ID" },
+          "tid": { "type": "integer", "format": "int64", "description": "Trade ID (unique)" },
+          "fee": { "type": "number", "description": "Fee amount in feeToken denomination" },
+          "feeToken": { "type": "string", "description": "Fee token (e.g. `USDC`, `USDH`, `+24371`, `CHUTORO`)" },
+          "fee_usdc": { "type": "number", "description": "Fee normalized to USD equivalent" },
+          "typeTrade": { "type": "string", "description": "Trade type" },
+          "trade_id": { "type": "string", "description": "Trade group ID" },
+          "market_name": { "type": "string", "description": "Market name (from JOIN)" },
+          "market_description": { "type": "string", "description": "Market description (from JOIN)" }
+        }
+      },
+      "FeeAggregation": {
+        "type": "object",
+        "properties": {
+          "user": { "type": "string", "description": "Wallet address" },
+          "coin": { "type": "string", "description": "Coin" },
+          "feeToken": { "type": "string", "description": "Fee denomination token" },
+          "date": { "type": "string", "format": "date", "description": "Date (YYYY-MM-DD)" },
+          "fills": { "type": "integer", "description": "Number of fills" },
+          "total_fee_raw": { "type": "number", "description": "Total fee in feeToken" },
+          "total_fee_usdc": { "type": "number", "description": "Total fee in USD" },
+          "total_notional": { "type": "number", "description": "Total notional volume in USD" },
+          "effective_rate": { "type": "number", "description": "Fee rate (fee_usdc / notional). Multiply by 10000 for bps." }
+        }
+      },
+      "Settlement": {
+        "type": "object",
+        "properties": {
+          "outcome_id": { "type": "integer" },
+          "settle_fraction": { "type": "number", "description": "Settlement result (0 = No, 1 = Yes, fractional possible)" },
+          "details": { "type": "string", "description": "Settlement details (e.g. `price:41`)" },
+          "broadcaster": { "type": "string", "description": "Broadcaster address" },
+          "block_time": { "type": "string" },
+          "block_height": { "type": "integer", "format": "int64" },
+          "nonce": { "type": "integer", "format": "int64" }
+        }
+      },
+      "OutcomeToken": {
+        "type": "object",
+        "properties": {
+          "outcome_id": { "type": "integer" },
+          "coin": { "type": "string", "description": "Spot pair coin (e.g. `@11`)" },
+          "spot_index": { "type": "integer", "description": "Spot pair index" },
+          "spot_name": { "type": "string", "description": "Spot token name (e.g. `CHUTORO`)" },
+          "deployer_fee_share": { "type": "number", "description": "Deployer trading fee share (currently 0)" },
+          "sz_decimals": { "type": "integer" },
+          "wei_decimals": { "type": "integer" },
+          "updated_at": { "type": "string" }
+        }
+      },
+      "FeeScale": {
+        "type": "object",
+        "properties": {
+          "block_time": { "type": "string" },
+          "block_height": { "type": "integer", "format": "int64" },
+          "broadcaster": { "type": "string" },
+          "fee_scale": { "type": "string", "description": "Fee scale configuration (JSON)" },
+          "nonce": { "type": "integer", "format": "int64" }
+        }
+      },
+      "UserAction": {
+        "type": "object",
+        "properties": {
+          "action_type": { "type": "string", "enum": ["SplitOutcome", "MergeOutcome", "NegateOutcome", "MergeQuestion", "RegisterQuestion", "ChangeOutcomeDescription", "ChangeQuestionDescription"] },
+          "user": { "type": "string" },
+          "outcome_id": { "type": "integer" },
+          "details": { "type": "string", "description": "Action details (JSON)" },
+          "block_time": { "type": "string" },
+          "block_height": { "type": "integer", "format": "int64" },
+          "nonce": { "type": "integer", "format": "int64" }
+        }
+      }
+    }
+  }
+}
