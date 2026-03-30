@@ -107,7 +107,7 @@
     },
     {
       "group": "REST API",
-      "openapi": "api-reference/openapi-hip4bis.json"
+      "openapi": "api-reference/openapi-hip4.json"
     }
   ]
 }
