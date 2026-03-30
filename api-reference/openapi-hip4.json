@@ -3,7 +3,7 @@
   "info": {
     "title": "HL Indexer — HIP-4 Prediction Markets API",
     "version": "1.0.0",
-    "description": "API to query indexed HIP-4 prediction market data on Hyperliquid **testnet**.\n\nHIP-4 introduces on-chain prediction markets (outcome trading). This API indexes:\n- **Markets**: Prediction market definitions with Yes/No outcomes\n- **Questions**: Groups of related outcomes (e.g. \"What will Hypurr eat?\" → Akami, Otoro, Canned Tuna)\n- **Fills**: All executed trades on prediction markets (`#` coins) and outcome spot tokens (`@` coins)\n- **Fees**: Aggregated fee breakdown per user, coin, and day\n- **Settlements**: Market resolution events\n- **Outcome Tokens**: Spot token metadata for tradeable outcome assets\n- **Fee Scales**: Governance events for global outcome fee configuration\n- **User Actions**: On-chain user actions (Split, Merge, Negate outcomes)\n\n> **Note**: This is a testnet-only API. HIP-4 is not yet live on mainnet.\n\n### Fee behavior\n- `#` prediction market fills currently have `fee = 0` (the `SetOutcomeFeeScale` governance action has not been activated on testnet)\n- `@` outcome token fills (spot) are charged normal spot fees (taker/maker rates)\n- `fee_usdc` is the fee normalized to USD equivalent\n\n### Pagination\nAll list endpoints support `limit` (default 100, max 10000) and `offset` (default 0).\n\n### Time filters\n- `start` / `end` on fills: epoch **milliseconds**\n- `start` / `end` on other endpoints: epoch **milliseconds**"
+    "description": "API to query indexed HIP-4 prediction market data on Hyperliquid **testnet**.\n\nHIP-4 introduces on-chain prediction markets (outcome trading). This API indexes:\n- **Outcomes**: Prediction market outcome definitions with Yes/No sides, volume stats, and question linkage\n- **Questions**: Groups of related outcomes (e.g. \"What will Hypurr eat?\" → Akami, Otoro, Canned Tuna)\n- **Fills**: All executed trades on prediction markets (`#` coins) and outcome spot tokens (`@` coins)\n- **Fees**: Aggregated fee breakdown per user, coin, and day\n- **Settlements**: Market resolution events\n- **Outcome Tokens**: Spot token metadata for tradeable outcome assets\n- **Fee Scales**: Governance events for global outcome fee configuration\n- **User Actions**: On-chain user actions (Split, Merge, Negate outcomes)\n\n> **Note**: This is a testnet-only API. HIP-4 is not yet live on mainnet.\n\n### Fee behavior\n- `#` prediction market fills currently have `fee = 0` (the `SetOutcomeFeeScale` governance action has not been activated on testnet)\n- `@` outcome token fills (spot) are charged normal spot fees (taker/maker rates)\n- `fee_usdc` is the fee normalized to USD equivalent\n\n### Pagination\nAll list endpoints support `limit` (default 100, max 10000) and `offset` (default 0).\n\n### Time filters\n- `start` / `end` on fills: epoch **milliseconds**\n- `start` / `end` on other endpoints: epoch **milliseconds**"
   },
   "servers": [
     {
@@ -12,7 +12,7 @@
     }
   ],
   "tags": [
-    { "name": "Markets", "description": "Prediction market definitions and metadata." },
+    { "name": "Outcomes", "description": "Prediction market outcome definitions and metadata." },
     { "name": "Questions", "description": "Prediction questions grouping multiple outcomes." },
     { "name": "Fills", "description": "Prediction market and outcome token fills." },
     { "name": "Fees", "description": "Aggregated fee analytics." },
@@ -22,12 +22,12 @@
     { "name": "User Actions", "description": "On-chain user outcome actions." }
   ],
   "paths": {
-    "/hip4/markets": {
+    "/hip4/outcomes": {
       "get": {
-        "tags": ["Markets"],
-        "summary": "List prediction markets",
-        "description": "Returns prediction market definitions. Each market is an outcome (e.g. \"Canned Tuna\") with Yes/No sides. Use `question_id` to get all outcomes belonging to a question.",
-        "operationId": "listMarkets",
+        "tags": ["Outcomes"],
+        "summary": "List prediction outcomes",
+        "description": "Returns prediction outcome definitions with volume stats. Each outcome (e.g. \"Canned Tuna\") has Yes/No sides and may belong to a question. Use `question_id` to get all outcomes for a question.\n\nAlso available as `/hip4/markets` (alias).",
+        "operationId": "listOutcomes",
         "parameters": [
           { "name": "outcome_id", "in": "query", "description": "Filter by outcome ID", "schema": { "type": "integer" } },
           { "name": "question_id", "in": "query", "description": "Filter by question ID — returns all outcomes for that question", "schema": { "type": "integer" } },
@@ -43,7 +43,7 @@
               "application/json": {
                 "schema": {
                   "type": "array",
-                  "items": { "$ref": "#/components/schemas/Market" }
+                  "items": { "$ref": "#/components/schemas/Outcome" }
                 },
                 "example": [
                   {
@@ -61,7 +61,10 @@
                     "quote_token": 0,
                     "block_time": "2026-03-29 23:12:55.308000000",
                     "question_name": "What will Hypurr eat the most of in Feb 2026?",
-                    "question_description": "Hypurr has committed to weighing and recording daily food intake in a food journal."
+                    "question_description": "Hypurr has committed to weighing and recording daily food intake in a food journal.",
+                    "total_fills": 2,
+                    "total_volume": 21.4,
+                    "unique_users": 2
                   }
                 ]
               }
@@ -351,24 +354,27 @@
       }
     },
     "schemas": {
-      "Market": {
+      "Outcome": {
         "type": "object",
         "properties": {
           "outcome_id": { "type": "integer", "description": "Unique outcome identifier" },
           "coin": { "type": "string", "description": "Prediction market coin (e.g. `#11`)" },
           "name": { "type": "string", "description": "Outcome name (e.g. `Canned Tuna`, `Recurring`)" },
           "description": { "type": "string", "description": "Outcome description or structured metadata for priceBinary" },
-          "class": { "type": "string", "description": "Market class (e.g. `priceBinary`). Empty for custom markets." },
-          "underlying": { "type": "string", "description": "Underlying asset (e.g. `BTC`, `HYPE`). Empty for custom markets." },
+          "class": { "type": "string", "description": "Market class (e.g. `priceBinary`). Empty for custom outcomes." },
+          "underlying": { "type": "string", "description": "Underlying asset (e.g. `BTC`, `HYPE`). Empty for custom outcomes." },
           "expiry": { "type": "string", "description": "Expiry datetime (e.g. `20260329-0500`)" },
-          "target_price": { "type": "number", "description": "Target price for priceBinary markets" },
+          "target_price": { "type": "number", "description": "Target price for priceBinary outcomes" },
           "period": { "type": "string", "description": "Period (e.g. `15m`, `1d`)" },
           "side_specs": { "type": "string", "description": "JSON array of side names (e.g. `[{\"name\":\"Yes\"},{\"name\":\"No\"}]`)" },
           "question_id": { "type": "integer", "nullable": true, "description": "Parent question ID (null if standalone)" },
           "quote_token": { "type": "integer", "description": "Quote token index" },
           "block_time": { "type": "string", "description": "Creation timestamp" },
           "question_name": { "type": "string", "description": "Parent question name (empty if no question)" },
-          "question_description": { "type": "string", "description": "Parent question description" }
+          "question_description": { "type": "string", "description": "Parent question description" },
+          "total_fills": { "type": "integer", "description": "Total number of fills on this outcome" },
+          "total_volume": { "type": "number", "description": "Total traded volume in USD (sum of px * sz)" },
+          "unique_users": { "type": "integer", "description": "Number of unique users who traded this outcome" }
         }
       },
       "Question": {
@@ -403,8 +409,8 @@
           "fee_usdc": { "type": "number", "description": "Fee normalized to USD equivalent" },
           "typeTrade": { "type": "string", "description": "Trade type" },
           "trade_id": { "type": "string", "description": "Trade group ID" },
-          "market_name": { "type": "string", "description": "Market name (from JOIN)" },
-          "market_description": { "type": "string", "description": "Market description (from JOIN)" }
+          "market_name": { "type": "string", "description": "Outcome name (from JOIN)" },
+          "market_description": { "type": "string", "description": "Outcome description (from JOIN)" }
         }
       },
       "FeeAggregation": {
