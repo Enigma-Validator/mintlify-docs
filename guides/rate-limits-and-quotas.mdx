@@ -6,32 +6,28 @@ HypeDexer applies **per-token** and **per-IP** rate limiting to ensure fair use 
 
 > **Why regions?** Choose the gateway closest to your users for best latency. **Pricing and quota accounting are the same in EU and JP.**
 
-
 ## Pricing
 
-> **Request access**
-> We’re onboarding a limited set of builders while the dashboard is finalized.  
-> **Telegram (DM):** [@enigma_validator](https://t.me/enigma_validator)  
-> **Telegram (Group):** [@hypedexer](https://t.me/hypedexer)  
+> **Request access** We’re onboarding a limited set of builders while the dashboard is finalized.\
+> **Telegram (DM):** [@enigma\_validator](https://t.me/enigma_validator)\
+> **Telegram (Group):** [@](https://t.me/c/EnigmaValidatorCommunity/13)[hypedexer](https://t.me/c/EnigmaValidatorCommunity/1)\
 > **Email:** [contact@hypedexer.com](mailto:contact@hypedexer.com)
 
-
-| Plan           | Price / month | REST included (weighted req/mo) | **WebSocket** (max conns / subs) | Link |
-| -------------- | ------------- | -------------------------------:| ---------------------------------:| :--- |
-| **Free**       | $0            | 5000                           | -                             | [Get Free](https://t.me/hypedexer) |
-| **Starter**    | **$249**      | 500,000                          | 4 / 5                            | [Starter](https://t.me/hypedexer) |
-| **Growth**     | **$899**      | 3,000,000                        | 10 / 20                           | [Growth](https://t.me/hypedexer) |
-| **Scale**      | **$1,999**    | 12,500,000                       | 30 / 60                         | [Scale](https://t.me/hypedexer) |
-| **Enterprise** | Custom        | Unlimited (fair use)             | Custom / Custom                    | [Talk to Sales](https://t.me/hypedexer) |
-
+| Plan | Price / month | REST included (weighted req/mo) | **WebSocket** (max conns / subs) | Link |
+| --- | --- | --: | --: | :-- |
+| **Free** | \$0 | 5000 | - | [Get Free](https://t.me/hypedexer) |
+| **Starter** | **\$249** | 500,000 | 4 / 5 | [Starter](https://t.me/hypedexer) |
+| **Growth** | **\$899** | 3,000,000 | 10 / 20 | [Growth](https://t.me/c/EnigmaValidatorCommunity/13) |
+| **Scale** | **\$1,999** | 12,500,000 | 30 / 60 | [Scale](https://t.me/c/EnigmaValidatorCommunity/13) |
+| **Enterprise** | Custom | Unlimited (fair use) | Custom / Custom | [Talk to Sales](https://t.me/c/EnigmaValidatorCommunity/13) |
 
 > **Free trial:** Every token includes the Free plan by default. No credit card required to start.
 
 ## Quick limits
 
-- **Rate limit unit** = **weighted request** (REST).  
-- **Heavy queries** cost more (see size multiplier).  
-- **WebSocket** events are pooled with REST: **5 events = 1 weighted request**.  
+- **Rate limit unit** = **weighted request** (REST).
+- **Heavy queries** cost more (see size multiplier).
+- **WebSocket** events are pooled with REST: **5 events = 1 weighted request**.
 - **EU = JP** pricing & accounting (choose the closest region for latency).
 
 ## REST details
@@ -39,23 +35,23 @@ HypeDexer applies **per-token** and **per-IP** rate limiting to ensure fair use 
 **429 response headers:** `Retry-After`, `X-RateLimit-Limit`, `X-RateLimit-Remaining`, `X-RateLimit-Reset`.
 
 **Weights by category**
+
 - **Historical (3):** `/fills/`
 - **Other (1):** for now, every other query uses the same weight
 
-**Result-size multiplier**  
-`request_weight = endpoint_weight × ceil(limit / 1000)`  
+**Result-size multiplier**\
+`request_weight = endpoint_weight × ceil(limit / 1000)`\
 Defaults & caps: default `limit` **100** · per-request cap `size_multiplier ≤ 10`.
 
 **Monthly quotas (reset 1st, 00:00 UTC)**
 
-| Plan       | Included (weighted) / month | Overage                 |
-| ---------- | --------------------------: | ----------------------- |
-| Free       | 5000                      | Not available (upgrade) |
-| Starter    | 500,000                      | $60 per additional 100k |
-| Growth     | 3,000,000                    | $45 per additional 100k |
-| Scale      | 12,500,000                   | $30 per additional 100k  |
-| Enterprise | Unlimited (fair use)         | No overage (contract)   |
-
+| Plan | Included (weighted) / month | Overage |
+| --- | --: | --- |
+| Free | 5000 | Not available (upgrade) |
+| Starter | 500,000 | \$60 per additional 100k |
+| Growth | 3,000,000 | \$45 per additional 100k |
+| Scale | 12,500,000 | \$30 per additional 100k |
+| Enterprise | Unlimited (fair use) | No overage (contract) |
 
 ## WebSocket details
 
@@ -63,27 +59,27 @@ Defaults & caps: default `limit` **100** · per-request cap `size_multiplier ≤
 - **Per-plan caps:** see the **WebSocket** column in the pricing table above.
 - **Best practice:** multiplex many **subscriptions** on a few **connections**; use backoff, heartbeats, and batch subscribe/unsubscribe.
 
-
 ## Regions & endpoints
 
 ```text
 EU: https://api-eu.hypedexer.com
 JP: https://api-jp.hypedexer.com
 ```
+
 ---
+
 Need Help ?
 
 <Columns cols={2}>
-  <Card title="Telegram" icon="telegram" href="https://t.me/hypedexer">
-    
+  <Card title="Telegram" icon="telegram" href="https://t.me/c/EnigmaValidatorCommunity/13">
   </Card>
+
   <Card title="Discord" icon="discord" href="https://discord.com/invite/cbKncMeZ52">
-    
   </Card>
+
   <Card title="Email" icon="envelope" href="mailto:contact@hypedexer.com">
-    
   </Card>
+
   <Card title="Twitter" icon="twitter" href="https://x.com/hypedexer">
-    
   </Card>
 </Columns>
