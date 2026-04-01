@@ -9,6 +9,10 @@
     {
       "url": "https://api.hypedexer.com/testnet",
       "description": "Testnet"
+    },
+    {
+      "url": "https://enterprise.hypedexer.com",
+      "description": "Production — Live fullnode data"
     }
   ],
   "tags": [
@@ -19,7 +23,9 @@
     { "name": "Settlements", "description": "Market resolution events." },
     { "name": "Outcome Tokens", "description": "Spot token metadata for outcome assets." },
     { "name": "Fee Scales", "description": "Governance fee scale events." },
-    { "name": "User Actions", "description": "On-chain user outcome actions." }
+    { "name": "User Actions", "description": "On-chain user outcome actions." },
+    { "name": "Live Data", "description": "Real-time market data from the Hyperliquid fullnode via POST /info. Served from enterprise.hypedexer.com." },
+    { "name": "WebSocket", "description": "Real-time streaming via WebSocket subscriptions. Connect to wss://enterprise.hypedexer.com/ws." }
   ],
   "paths": {
     "/hip4/outcomes": {
@@ -339,6 +345,121 @@
           }
         }
       }
+    },
+    "/info": {
+      "post": {
+        "tags": ["Live Data"],
+        "summary": "Unified live data endpoint",
+        "description": "Dispatches based on the `type` field in the JSON body.\nLocally handled types: metaAndAssetCtxs, allMids, userFills, userFillsByTime, allFills, trades, l2Book, l2Books, availableDates.\nProxy types (meta, spotMeta, openOrders, clearinghouseState, etc.) are forwarded to the local Hyperliquid node.\n\n**Server:** enterprise.hypedexer.com",
+        "operationId": "postInfo",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/LiveInfoRequest" },
+              "examples": {
+                "metaAndAssetCtxs": {
+                  "summary": "Asset context for a coin",
+                  "value": { "type": "metaAndAssetCtxs", "coin": "BTC" }
+                },
+                "allMids": {
+                  "summary": "Mid prices for all coins",
+                  "value": { "type": "allMids" }
+                },
+                "allMids_dex": {
+                  "summary": "Mid prices for a specific dex",
+                  "value": { "type": "allMids", "dex": "xyz" }
+                },
+                "userFills": {
+                  "summary": "Fills for a user",
+                  "value": { "type": "userFills", "user": "0xabc...", "startTime": 1700000000000, "limit": 50 }
+                },
+                "userFillsByTime": {
+                  "summary": "Fills for a user (alias)",
+                  "value": { "type": "userFillsByTime", "addresses": ["0xabc..."], "startTime": 1700000000000, "endTime": 1700100000000 }
+                },
+                "allFills": {
+                  "summary": "All fills",
+                  "value": { "type": "allFills", "coin": "ETH", "limit": 100 }
+                },
+                "trades": {
+                  "summary": "Trades by coin",
+                  "value": { "type": "trades", "coin": "BTC", "limit": 50 }
+                },
+                "l2Book": {
+                  "summary": "L2 orderbook snapshot",
+                  "value": { "type": "l2Book", "coin": "BTC" }
+                },
+                "clearinghouseState": {
+                  "summary": "Clearinghouse state (single user)",
+                  "value": { "type": "clearinghouseState", "user": "0xabc..." }
+                },
+                "clearinghouseState_multi": {
+                  "summary": "Clearinghouse state (multi-user)",
+                  "value": { "type": "clearinghouseState", "users": ["0xabc...", "0xdef..."] }
+                },
+                "availableDates": {
+                  "summary": "Available dates",
+                  "value": { "type": "availableDates", "volume": "node_fills" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/LiveInfoResponse" }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request (missing type, missing required parameter)",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/LiveErrorResponse" }
+              }
+            }
+          },
+          "401": {
+            "description": "Invalid API key",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/LiveErrorResponse" }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded (1001 req/min per IP)"
+          },
+          "502": {
+            "description": "Upstream (local node) unreachable",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/LiveErrorResponse" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/ws": {
+      "get": {
+        "tags": ["WebSocket"],
+        "summary": "WebSocket endpoint",
+        "description": "Single WebSocket connection for real-time streaming.\nAuthentication via query param `token`.\nAfter connecting, send subscribe/unsubscribe messages.\n\n**Server:** wss://enterprise.hypedexer.com\n\n**Supported subscriptions:** userFills, allFills, allMids, trades, l2Book, l4Book, l4BookUpdates.\n\n**Subscribe example:**\n```json\n{ \"method\": \"subscribe\", \"subscription\": { \"type\": \"userFills\", \"user\": \"0xabc...\" } }\n```\n\n**Unsubscribe example:**\n```json\n{ \"method\": \"unsubscribe\", \"subscription\": { \"type\": \"userFills\", \"user\": \"0xabc...\" } }\n```\n\nThe `method` field can also be `type` (both are accepted).",
+        "operationId": "wsConnect",
+        "parameters": [
+          { "name": "token", "in": "query", "required": false, "schema": { "type": "string" }, "description": "API key (optional)" }
+        ],
+        "responses": {
+          "101": {
+            "description": "WebSocket upgrade successful"
+          }
+        }
+      }
     }
   },
   "security": [
@@ -351,6 +472,11 @@
         "in": "header",
         "name": "X-API-Key",
         "description": "Include in every request header as `X-API-Key: <your_key>`."
+      },
+      "BearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "description": "Optional. API key passed via Authorization: Bearer <key>. Used by Live Data endpoints."
       }
     },
     "schemas": {
@@ -472,6 +598,111 @@
           "block_time": { "type": "string" },
           "block_height": { "type": "integer", "format": "int64" },
           "nonce": { "type": "integer", "format": "int64" }
+        }
+      },
+      "LiveInfoRequest": {
+        "type": "object",
+        "required": ["type"],
+        "properties": {
+          "type": {
+            "type": "string",
+            "description": "Request type",
+            "enum": [
+              "metaAndAssetCtxs",
+              "allMids",
+              "userFills",
+              "userFillsByTime",
+              "allFills",
+              "trades",
+              "l2Book",
+              "l2Books",
+              "clearinghouseState",
+              "availableDates",
+              "meta",
+              "spotMeta",
+              "openOrders",
+              "exchangeStatus"
+            ]
+          },
+          "user": { "type": "string", "description": "Ethereum address (for userFills, clearinghouseState)" },
+          "users": { "type": "array", "items": { "type": "string" }, "description": "List of addresses (clearinghouseState multi-user)" },
+          "addresses": { "type": "array", "items": { "type": "string" }, "description": "List of addresses (userFills, userFillsByTime)" },
+          "coin": { "type": "string", "description": "Coin symbol (BTC, ETH, etc.)" },
+          "coins": { "type": "array", "items": { "type": "string" }, "description": "List of coins (l2Books)" },
+          "dex": { "type": "string", "description": "Dex filter (allMids, clearinghouseState). Use ALL_DEXS for all." },
+          "startTime": { "type": "integer", "description": "Start timestamp in milliseconds" },
+          "endTime": { "type": "integer", "description": "End timestamp in milliseconds" },
+          "limit": { "type": "integer", "description": "Maximum number of results", "default": 100 },
+          "volume": { "type": "string", "description": "Volume source (availableDates)", "enum": ["node_fills", "node_trades"] }
+        }
+      },
+      "LiveInfoResponse": {
+        "type": "object",
+        "properties": {
+          "result": {
+            "description": "Response data (structure varies by type)"
+          },
+          "cursor": { "type": "string", "nullable": true }
+        }
+      },
+      "LiveErrorResponse": {
+        "type": "object",
+        "required": ["error"],
+        "properties": {
+          "error": { "type": "string" }
+        }
+      },
+      "AssetContext": {
+        "type": "object",
+        "description": "Asset context (aligned with metaAndAssetCtxs[1][i] from the Hyperliquid API)",
+        "properties": {
+          "funding": { "type": "string", "nullable": true, "example": "-0.0000056499" },
+          "openInterest": { "type": "string", "nullable": true, "example": "27328.306520" },
+          "prevDayPx": { "type": "string", "nullable": true, "example": "65633" },
+          "dayNtlVlm": { "type": "string", "nullable": true, "example": "2290705901.9124403" },
+          "premium": { "type": "string", "nullable": true, "example": "-0.0005538756" },
+          "oraclePx": { "type": "string", "nullable": true, "example": "66802" },
+          "markPx": { "type": "string", "nullable": true, "example": "66765" },
+          "midPx": { "type": "string", "nullable": true, "example": "66764.5" },
+          "impactPxs": { "type": "array", "nullable": true, "items": { "type": "string" }, "example": ["66764", "66765"] },
+          "dayBaseVlm": { "type": "string", "nullable": true, "example": "34250.45488" }
+        }
+      },
+      "AllMids": {
+        "type": "object",
+        "description": "Map of coin to midPx for all coins",
+        "additionalProperties": { "type": "string" },
+        "example": { "BTC": "66764.5", "ETH": "3421.2" }
+      },
+      "LiveFill": {
+        "type": "object",
+        "properties": {
+          "coin": { "type": "string" },
+          "px": { "type": "string", "description": "Execution price" },
+          "sz": { "type": "string", "description": "Size" },
+          "side": { "type": "string", "enum": ["A", "B"], "description": "A = ask (sell), B = bid (buy)" },
+          "time": { "type": "integer", "description": "Timestamp in milliseconds" },
+          "startPosition": { "type": "string" },
+          "dir": { "type": "string" },
+          "closedPnl": { "type": "string" },
+          "hash": { "type": "string" },
+          "oid": { "type": "integer" },
+          "crossed": { "type": "boolean" },
+          "fee": { "type": "string" },
+          "tid": { "type": "integer" },
+          "feeToken": { "type": "string" }
+        }
+      },
+      "WsSubscriptionParams": {
+        "type": "object",
+        "required": ["type"],
+        "properties": {
+          "type": { "type": "string", "description": "Subscription type", "enum": ["userFills", "allFills", "allMids", "trades", "l2Book", "l4Book", "l4BookUpdates"] },
+          "user": { "type": "string", "description": "Ethereum address (required for userFills)" },
+          "coin": { "type": "string", "description": "Coin symbol (required for l2Book, l4Book)" },
+          "coins": { "type": "array", "items": { "type": "string" }, "description": "List of coins" },
+          "dex": { "type": "string", "description": "Dex filter (allMids)" },
+          "aggregateByTime": { "type": "boolean", "description": "Aggregate fills by time (userFills)", "default": false }
         }
       }
     }
