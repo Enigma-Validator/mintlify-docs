@@ -103,6 +103,14 @@
           {
             "group": "Live Data",
             "pages": ["live-data/index"]
+          },
+          {
+            "group": "REST",
+            "openapi": "api-reference/openapi-live-data-rest.json"
+          },
+          {
+            "group": "WebSocket",
+            "openapi": "api-reference/openapi-live-data-ws.json"
           }
         ]
       },
