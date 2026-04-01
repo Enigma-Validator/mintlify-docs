@@ -96,21 +96,29 @@
             ]
           }
         ]
-      },{
-  "tab": "Testnet (HIP-4)",
-  "groups": [
-    {
-      "group": "HIP-4 Prediction Markets",
-      "pages": [
-        "testnet/overview"
-      ]
-    },
-    {
-      "group": "REST API",
-      "openapi": "api-reference/openapi-hip4.json"
-    }
-  ]
-}
+      },
+      {
+        "tab": "Live Data",
+        "groups": [
+          {
+            "group": "Live Data",
+            "pages": ["live-data/index"]
+          }
+        ]
+      },
+      {
+        "tab": "Testnet (HIP-4)",
+        "groups": [
+          {
+            "group": "HIP-4 Prediction Markets",
+            "pages": ["testnet/overview"]
+          },
+          {
+            "group": "REST API",
+            "openapi": "api-reference/openapi-hip4.json"
+          }
+        ]
+      }
     ]
   },
   "logo": {
