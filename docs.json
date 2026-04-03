@@ -9,6 +9,30 @@
   },
   "favicon": "/favicon.svg",
   "navigation": {
+    "global": {
+      "anchors": [
+        {
+          "anchor": "Twitter",
+          "icon": "x",
+          "href": "https://x.com/hypedexer"
+        },
+        {
+          "anchor": "Discord",
+          "icon": "discord",
+          "href": "https://discord.com/invite/cbKncMeZ52"
+        },
+        {
+          "anchor": "Telegram",
+          "icon": "telegram",
+          "href": "https://t.me/c/EnigmaValidatorCommunity/13"
+        },
+        {
+          "anchor": "Email",
+          "icon": "envelope",
+          "href": "mailto:contact@hypedexer.com"
+        }
+      ]
+    },
     "tabs": [
       {
         "tab": "Overview",
@@ -20,15 +44,6 @@
               "guides/environments-and-regions-eu-jp",
               "guides/authentication-and-api-keys",
               "guides/base-urls-and-versioning"
-            ]
-          },
-          {
-            "group": "API documentation",
-            "pages": [
-              "api/introduction",
-              "api/generate-api-key",
-              "api/notation",
-              "api/features"
             ]
           },
           {
@@ -46,6 +61,63 @@
               "guides/changelog",
               "guides/faq"
             ]
+          },
+          {
+            "group": "API documentation",
+            "pages": [
+              "api/introduction",
+              "api/generate-api-key",
+              "api/notation",
+              "api/features"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "API reference",
+        "groups": [
+          {
+            "group": "API documentation",
+            "pages": [
+              "api/introduction",
+              "api/generate-api-key",
+              "api/notation",
+              "api/features"
+            ]
+          },
+          {
+            "group": "REST API",
+            "openapi": "api-reference/openapi.json",
+            "pages": [
+              "api-reference/live"
+            ]
+          },
+          {
+            "group": "WebSocket",
+            "openapi": "api-reference/ws-openapi.final2.json",
+            "pages": [
+              "websocket/overview",
+              "websocket/official-websocket",
+              "websocket/ws-completed-trades",
+              "websocket/ws-fills-spot",
+              "websocket/ws-recent-activity",
+              "websocket/ws-liquidations"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "Testnet (HIP-4)",
+        "groups": [
+          {
+            "group": "HIP-4 Prediction Markets",
+            "pages": [
+              "testnet/overview"
+            ]
+          },
+          {
+            "group": "REST API",
+            "openapi": "api-reference/openapi-hip4.json"
           }
         ]
       },
@@ -147,6 +219,11 @@
     ]
   },
   "footer": {
+    "socials": {
+      "x": "https://x.com/hypedexer",
+      "github": "https://github.com/mintlify",
+      "linkedin": "https://linkedin.com/company/mintlify"
+    },
     "links": [
       {
         "header": "Community",
