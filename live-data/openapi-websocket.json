@@ -1,0 +1,868 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Hypedexer Live Data — WebSocket API",
+    "version": "0.1.0",
+    "description": "WebSocket API for real-time Hyperliquid live data streaming.\n\n## Connection\n\n```\nwss://enterprise.hypedexer.com/ws?token=<API_KEY>\n```\n\nThe `token` query parameter is optional (only required when `API_KEY` is configured on the server).\n\nOn successful connection, the server sends:\n```json\n{\"type\": \"connected\"}\n```\n\nIf the token is invalid:\n```json\n{\"type\": \"error\", \"message\": \"Invalid API key\"}\n```\n\n## Protocol\n\nAll messages are JSON. The client sends **subscribe**, **unsubscribe**, and **pong** messages. The server sends **acknowledgements**, **snapshots**, and **real-time updates**.\n\nBoth `\"method\"` and `\"type\"` fields are accepted as the message type discriminator (e.g., `{\"method\": \"subscribe\", ...}` and `{\"type\": \"subscribe\", ...}` are equivalent).\n\n## Supported subscriptions\n\n| Type | Required params | Description |\n|------|----------------|-------------|\n| `userFills` | `user` | Fills for a specific user (snapshot + updates) |\n| `allFills` | — | All fills globally |\n| `allMids` | — | Mid prices for all coins (polled every 300ms) |\n| `trades` | — | Trade events |\n| `l2Book` | `coin` | L2 order book (snapshot + updates via Redis pub/sub) |\n| `l4Book` | `coin` | L4 raw order book (snapshot + updates via Redis pub/sub) |\n| `l4BookUpdates` | — | L4 book update events |\n\n## Acknowledgement formats\n\n**userFills & allMids** use `subscriptionResponse`:\n```json\n{\"channel\": \"subscriptionResponse\", \"data\": {\"method\": \"subscribe\", \"subscription\": {...}}}\n```\n\n**All other types** use `subscriptionUpdate`:\n```json\n{\"type\": \"subscriptionUpdate\", \"subscription\": {...}, \"active\": true}\n```\n\n## Data sources\n\n| Subscription | Source |\n|-------------|--------|\n| `userFills` | Redis pub/sub `userfills:{address}` |\n| `allMids` | Redis cache polling (0.3s interval, only sends on change) |\n| `l2Book` | Redis pub/sub `l2book:{coin}` |\n| `l4Book` / `l4BookUpdates` | Redis pub/sub `l4raw:{coin}` |\n| `allFills`, `trades` | Volume file streaming |",
+    "contact": {
+      "name": "Hypedexer"
+    }
+  },
+  "servers": [
+    {
+      "url": "wss://enterprise.hypedexer.com",
+      "description": "Production (WebSocket)"
+    }
+  ],
+  "tags": [
+    {
+      "name": "WebSocket",
+      "description": "Single multiplex endpoint `GET /ws` — subscribe and unsubscribe via JSON messages. Message schemas are documented under **components/schemas**."
+    }
+  ],
+  "paths": {
+    "/ws": {
+      "get": {
+        "tags": ["WebSocket"],
+        "operationId": "liveDataWebSocket",
+        "summary": "WebSocket endpoint",
+        "description": "Upgrade to WebSocket. After connection, send subscribe/unsubscribe JSON messages to start/stop receiving real-time data.",
+        "parameters": [
+          {
+            "name": "token",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "API key for authentication (optional, only required when API_KEY is configured)"
+          }
+        ],
+        "responses": {
+          "101": {
+            "description": "WebSocket upgrade successful. Server sends `{\"type\": \"connected\"}` immediately."
+          },
+          "401": {
+            "description": "Invalid or missing API key when authentication is required."
+          }
+        },
+        "security": [
+          {
+            "TokenQuery": []
+          }
+        ],
+        "x-websocket": true
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "TokenQuery": {
+        "type": "apiKey",
+        "in": "query",
+        "name": "token",
+        "description": "Optional API key when the server requires authentication (`wss://.../ws?token=<API_KEY>`)."
+      }
+    },
+    "schemas": {
+      "ClientMessage": {
+        "description": "Any message sent by the client to the server. The `method` field (or `type` field, both accepted) determines the action.",
+        "oneOf": [
+          { "$ref": "#/components/schemas/SubscribeMessage" },
+          { "$ref": "#/components/schemas/UnsubscribeMessage" },
+          { "$ref": "#/components/schemas/PongMessage" }
+        ]
+      },
+      "SubscribeMessage": {
+        "type": "object",
+        "description": "Subscribe to a data channel. After subscribing, the server sends an acknowledgement and an initial snapshot (if applicable), then real-time updates.",
+        "required": [
+          "method",
+          "subscription"
+        ],
+        "properties": {
+          "method": {
+            "type": "string",
+            "description": "`subscribe` (also accepted via the `type` field)",
+            "enum": [
+              "subscribe"
+            ]
+          },
+          "subscription": {
+            "$ref": "#/components/schemas/SubscriptionParams"
+          }
+        },
+        "example": {
+          "method": "subscribe",
+          "subscription": {
+            "type": "userFills",
+            "user": "0xabc..."
+          }
+        }
+      },
+      "UnsubscribeMessage": {
+        "type": "object",
+        "description": "Unsubscribe from a data channel. The server sends an acknowledgement.",
+        "required": [
+          "method",
+          "subscription"
+        ],
+        "properties": {
+          "method": {
+            "type": "string",
+            "enum": [
+              "unsubscribe"
+            ]
+          },
+          "subscription": {
+            "$ref": "#/components/schemas/SubscriptionParams"
+          }
+        },
+        "example": {
+          "method": "unsubscribe",
+          "subscription": {
+            "type": "userFills",
+            "user": "0xabc..."
+          }
+        }
+      },
+      "PongMessage": {
+        "type": "object",
+        "description": "Client heartbeat response. Send this in response to server pings to keep the connection alive.",
+        "required": [
+          "method"
+        ],
+        "properties": {
+          "method": {
+            "type": "string",
+            "enum": [
+              "pong"
+            ]
+          }
+        },
+        "example": {
+          "method": "pong"
+        }
+      },
+      "SubscriptionParams": {
+        "type": "object",
+        "description": "Parameters for a subscription. The `type` field selects the data channel. Additional fields are required depending on the type.",
+        "required": [
+          "type"
+        ],
+        "properties": {
+          "type": {
+            "type": "string",
+            "description": "Subscription type",
+            "enum": [
+              "userFills",
+              "allFills",
+              "allMids",
+              "trades",
+              "l2Book",
+              "l4Book",
+              "l4BookUpdates"
+            ]
+          },
+          "user": {
+            "type": "string",
+            "description": "Ethereum address (0x-prefixed). **Required** for `userFills`."
+          },
+          "coin": {
+            "type": "string",
+            "description": "Coin symbol (e.g., `BTC`). **Required** for `l2Book` and `l4Book`."
+          },
+          "coins": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "List of coin symbols (optional, for future use)"
+          },
+          "dex": {
+            "type": "string",
+            "description": "DEX filter for `allMids`. Omit for perps only, `ALL_DEXS` for all, or a specific DEX name."
+          },
+          "aggregateByTime": {
+            "type": "boolean",
+            "description": "When true, fills with the same timestamp are aggregated: sizes summed, prices weighted-averaged. Only applies to `userFills`.",
+            "default": false
+          }
+        }
+      },
+      "ServerConnected": {
+        "type": "object",
+        "description": "Sent immediately after a successful WebSocket connection.",
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": [
+              "connected"
+            ]
+          }
+        },
+        "example": {
+          "type": "connected"
+        }
+      },
+      "ServerError": {
+        "type": "object",
+        "description": "Error message from the server.",
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": [
+              "error"
+            ]
+          },
+          "message": {
+            "type": "string",
+            "description": "Human-readable error description"
+          }
+        },
+        "example": {
+          "type": "error",
+          "message": "Unsupported subscription: unknownType"
+        }
+      },
+      "SubscriptionResponseAck": {
+        "type": "object",
+        "description": "Acknowledgement sent for `userFills` and `allMids` subscriptions (subscribe and unsubscribe).",
+        "properties": {
+          "channel": {
+            "type": "string",
+            "enum": [
+              "subscriptionResponse"
+            ]
+          },
+          "data": {
+            "type": "object",
+            "properties": {
+              "method": {
+                "type": "string",
+                "enum": [
+                  "subscribe",
+                  "unsubscribe"
+                ],
+                "description": "The action that was acknowledged"
+              },
+              "subscription": {
+                "$ref": "#/components/schemas/SubscriptionParams"
+              }
+            }
+          }
+        },
+        "example": {
+          "channel": "subscriptionResponse",
+          "data": {
+            "method": "subscribe",
+            "subscription": {
+              "type": "userFills",
+              "user": "0xabc...",
+              "aggregateByTime": false
+            }
+          }
+        }
+      },
+      "SubscriptionUpdateAck": {
+        "type": "object",
+        "description": "Acknowledgement sent for `allFills`, `trades`, `l2Book`, `l4Book`, and `l4BookUpdates` subscriptions.",
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": [
+              "subscriptionUpdate"
+            ]
+          },
+          "subscription": {
+            "$ref": "#/components/schemas/SubscriptionParams"
+          },
+          "active": {
+            "type": "boolean",
+            "description": "`true` on subscribe, `false` on unsubscribe"
+          }
+        },
+        "example": {
+          "type": "subscriptionUpdate",
+          "subscription": {
+            "type": "l2Book",
+            "coin": "BTC"
+          },
+          "active": true
+        }
+      },
+      "UserFillsSnapshot": {
+        "type": "object",
+        "description": "Initial snapshot of user fills, sent immediately after subscribing to `userFills`. Contains `isSnapshot: true`.",
+        "properties": {
+          "channel": {
+            "type": "string",
+            "enum": [
+              "userFills"
+            ]
+          },
+          "data": {
+            "type": "object",
+            "properties": {
+              "isSnapshot": {
+                "type": "boolean",
+                "description": "Always `true` for the initial snapshot",
+                "enum": [
+                  true
+                ]
+              },
+              "user": {
+                "type": "string",
+                "description": "Ethereum address (lowercase)"
+              },
+              "fills": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/Fill"
+                },
+                "description": "Historical fills for this user. If `aggregateByTime` is enabled, fills with the same timestamp are aggregated."
+              }
+            }
+          }
+        },
+        "example": {
+          "channel": "userFills",
+          "data": {
+            "isSnapshot": true,
+            "user": "0xabc...",
+            "fills": [
+              {
+                "coin": "BTC",
+                "px": "65000.5",
+                "sz": "0.1",
+                "side": "B",
+                "time": 1700000050000,
+                "startPosition": "0.0",
+                "dir": "Open Long",
+                "closedPnl": "0.0",
+                "hash": "0x...",
+                "oid": 12345,
+                "crossed": true,
+                "fee": "1.625",
+                "tid": 67890,
+                "feeToken": "USDC"
+              }
+            ]
+          }
+        }
+      },
+      "UserFillsUpdate": {
+        "type": "object",
+        "description": "Real-time fill update for a subscribed user. Received via Redis pub/sub `userfills:{address}`.",
+        "properties": {
+          "channel": {
+            "type": "string",
+            "enum": [
+              "userFills"
+            ]
+          },
+          "data": {
+            "type": "object",
+            "properties": {
+              "user": {
+                "type": "string",
+                "description": "Ethereum address (lowercase)"
+              },
+              "fills": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/Fill"
+                },
+                "description": "New fills. If `aggregateByTime` is enabled, fills with the same timestamp are aggregated."
+              }
+            }
+          }
+        },
+        "example": {
+          "channel": "userFills",
+          "data": {
+            "user": "0xabc...",
+            "fills": [
+              {
+                "coin": "ETH",
+                "px": "2500.0",
+                "sz": "1.0",
+                "side": "A",
+                "time": 1700000090000
+              }
+            ]
+          }
+        }
+      },
+      "AllMidsSnapshot": {
+        "type": "object",
+        "description": "Initial mid prices snapshot, sent immediately after subscribing to `allMids`.",
+        "properties": {
+          "channel": {
+            "type": "string",
+            "enum": [
+              "allMids"
+            ]
+          },
+          "data": {
+            "type": "object",
+            "properties": {
+              "mids": {
+                "type": "object",
+                "additionalProperties": {
+                  "type": "string"
+                },
+                "description": "Map of coin symbol to mid price string"
+              },
+              "dex": {
+                "type": "string",
+                "description": "Present when a DEX filter was specified in the subscription"
+              }
+            }
+          }
+        },
+        "example": {
+          "channel": "allMids",
+          "data": {
+            "mids": {
+              "BTC": "66764.5",
+              "ETH": "3421.2",
+              "SOL": "150.75"
+            }
+          }
+        }
+      },
+      "AllMidsUpdate": {
+        "type": "object",
+        "description": "Mid prices update. Only sent when at least one mid price has changed since the last update. Polled every 300ms.",
+        "properties": {
+          "channel": {
+            "type": "string",
+            "enum": [
+              "allMids"
+            ]
+          },
+          "data": {
+            "type": "object",
+            "properties": {
+              "mids": {
+                "type": "object",
+                "additionalProperties": {
+                  "type": "string"
+                },
+                "description": "Full map of all current mid prices (not a diff)"
+              },
+              "dex": {
+                "type": "string",
+                "description": "Present when a DEX filter is active"
+              }
+            }
+          }
+        },
+        "example": {
+          "channel": "allMids",
+          "data": {
+            "mids": {
+              "BTC": "66780.0",
+              "ETH": "3425.5"
+            }
+          }
+        }
+      },
+      "L2BookSnapshot": {
+        "type": "object",
+        "description": "L2 order book snapshot, sent immediately after subscribing to `l2Book` (if data is available in Redis cache).",
+        "properties": {
+          "channel": {
+            "type": "string",
+            "enum": [
+              "l2Book"
+            ]
+          },
+          "data": {
+            "type": "object",
+            "description": "L2 book data as received from Redis cache",
+            "properties": {
+              "coin": {
+                "type": "string"
+              },
+              "bids": {
+                "type": "array",
+                "items": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  },
+                  "description": "[price, size]"
+                }
+              },
+              "asks": {
+                "type": "array",
+                "items": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  },
+                  "description": "[price, size]"
+                }
+              },
+              "timestamp": {
+                "type": "integer",
+                "nullable": true
+              }
+            }
+          }
+        },
+        "example": {
+          "channel": "l2Book",
+          "data": {
+            "coin": "BTC",
+            "bids": [
+              [
+                "65000.0",
+                "0.5"
+              ],
+              [
+                "64999.0",
+                "1.0"
+              ]
+            ],
+            "asks": [
+              [
+                "65001.0",
+                "0.3"
+              ],
+              [
+                "65002.0",
+                "0.7"
+              ]
+            ],
+            "timestamp": 1700000050000
+          }
+        }
+      },
+      "L2BookUpdate": {
+        "type": "object",
+        "description": "L2 order book update received via Redis pub/sub `l2book:{coin}`.",
+        "properties": {
+          "channel": {
+            "type": "string",
+            "enum": [
+              "l2Book"
+            ]
+          },
+          "data": {
+            "type": "object",
+            "description": "L2 book update data as received from Redis"
+          }
+        },
+        "example": {
+          "channel": "l2Book",
+          "data": {
+            "coin": "BTC",
+            "bids": [
+              [
+                "65000.5",
+                "0.6"
+              ]
+            ],
+            "asks": [
+              [
+                "65001.5",
+                "0.4"
+              ]
+            ],
+            "timestamp": 1700000051000
+          }
+        }
+      },
+      "L4BookSnapshot": {
+        "type": "object",
+        "description": "L4 (raw) order book snapshot, sent immediately after subscribing to `l4Book` (if data is available in Redis cache).",
+        "properties": {
+          "channel": {
+            "type": "string",
+            "enum": [
+              "l4Book"
+            ]
+          },
+          "data": {
+            "type": "object",
+            "properties": {
+              "snapshot": {
+                "type": "object",
+                "description": "L4 book snapshot data as received from Redis cache"
+              }
+            }
+          }
+        },
+        "example": {
+          "channel": "l4Book",
+          "data": {
+            "snapshot": {
+              "coin": "BTC",
+              "levels": []
+            }
+          }
+        }
+      },
+      "L4BookUpdate": {
+        "type": "object",
+        "description": "L4 order book update received via Redis pub/sub `l4raw:{coin}`. Contains raw book diff updates.",
+        "properties": {
+          "channel": {
+            "type": "string",
+            "enum": [
+              "l4Book"
+            ]
+          },
+          "data": {
+            "type": "object",
+            "properties": {
+              "updates": {
+                "type": "array",
+                "description": "Array of L4 book diff events",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "coin": {
+                      "type": "string"
+                    },
+                    "side": {
+                      "type": "string",
+                      "enum": [
+                        "A",
+                        "B"
+                      ]
+                    },
+                    "px": {
+                      "type": "string"
+                    },
+                    "sz": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "example": {
+          "channel": "l4Book",
+          "data": {
+            "updates": [
+              {
+                "coin": "BTC",
+                "side": "A",
+                "px": "65001.0",
+                "sz": "0.5"
+              },
+              {
+                "coin": "BTC",
+                "side": "B",
+                "px": "64999.0",
+                "sz": "0.3"
+              }
+            ]
+          }
+        }
+      },
+      "AllFillsUpdate": {
+        "type": "object",
+        "description": "Global fill event. Broadcast to all `allFills` subscribers.",
+        "properties": {
+          "channel": {
+            "type": "string",
+            "enum": [
+              "allFills"
+            ]
+          },
+          "data": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "address": {
+                  "type": "string",
+                  "description": "Ethereum address"
+                },
+                "fill": {
+                  "$ref": "#/components/schemas/Fill"
+                }
+              }
+            }
+          }
+        }
+      },
+      "TradesUpdate": {
+        "type": "object",
+        "description": "Trade event. Broadcast to all `trades` subscribers.",
+        "properties": {
+          "channel": {
+            "type": "string",
+            "enum": [
+              "trades"
+            ]
+          },
+          "data": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "coin": {
+                  "type": "string"
+                },
+                "px": {
+                  "type": "string"
+                },
+                "sz": {
+                  "type": "string"
+                },
+                "time": {
+                  "type": "integer"
+                },
+                "side": {
+                  "type": "string",
+                  "enum": [
+                    "A",
+                    "B"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      },
+      "Fill": {
+        "type": "object",
+        "description": "A single fill from the Hyperliquid fullnode",
+        "properties": {
+          "coin": {
+            "type": "string",
+            "description": "Coin symbol",
+            "example": "BTC"
+          },
+          "px": {
+            "type": "string",
+            "description": "Execution price",
+            "example": "65000.5"
+          },
+          "sz": {
+            "type": "string",
+            "description": "Size",
+            "example": "0.1"
+          },
+          "side": {
+            "type": "string",
+            "enum": [
+              "A",
+              "B"
+            ],
+            "description": "A = ask (sell), B = bid (buy)"
+          },
+          "time": {
+            "type": "integer",
+            "description": "Timestamp in milliseconds since epoch",
+            "example": 1700000050000
+          },
+          "startPosition": {
+            "type": "string",
+            "description": "Position before this fill",
+            "example": "0.0"
+          },
+          "dir": {
+            "type": "string",
+            "description": "Direction description",
+            "example": "Open Long"
+          },
+          "closedPnl": {
+            "type": "string",
+            "description": "Closed PnL from this fill",
+            "example": "0.0"
+          },
+          "hash": {
+            "type": "string",
+            "description": "Transaction hash",
+            "example": "0x..."
+          },
+          "oid": {
+            "type": "integer",
+            "description": "Order ID",
+            "example": 12345
+          },
+          "crossed": {
+            "type": "boolean",
+            "description": "Whether the order crossed the spread"
+          },
+          "fee": {
+            "type": "string",
+            "description": "Fee amount",
+            "example": "1.625"
+          },
+          "tid": {
+            "type": "integer",
+            "description": "Trade ID",
+            "example": 67890
+          },
+          "feeToken": {
+            "type": "string",
+            "description": "Fee token symbol",
+            "example": "USDC"
+          }
+        }
+      },
+      "ServerMessage": {
+        "description": "Any message the server may send to the client",
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/ServerConnected"
+          },
+          {
+            "$ref": "#/components/schemas/ServerError"
+          },
+          {
+            "$ref": "#/components/schemas/SubscriptionResponseAck"
+          },
+          {
+            "$ref": "#/components/schemas/SubscriptionUpdateAck"
+          },
+          {
+            "$ref": "#/components/schemas/UserFillsSnapshot"
+          },
+          {
+            "$ref": "#/components/schemas/UserFillsUpdate"
+          },
+          {
+            "$ref": "#/components/schemas/AllMidsSnapshot"
+          },
+          {
+            "$ref": "#/components/schemas/AllMidsUpdate"
+          },
+          {
+            "$ref": "#/components/schemas/L2BookSnapshot"
+          },
+          {
+            "$ref": "#/components/schemas/L2BookUpdate"
+          },
+          {
+            "$ref": "#/components/schemas/L4BookSnapshot"
+          },
+          {
+            "$ref": "#/components/schemas/L4BookUpdate"
+          },
+          {
+            "$ref": "#/components/schemas/AllFillsUpdate"
+          },
+          {
+            "$ref": "#/components/schemas/TradesUpdate"
+          }
+        ]
+      }
+    }
+  },
+  "security": [
+    {
+      "TokenQuery": []
+    }
+  ]
+}

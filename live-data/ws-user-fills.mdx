@@ -1,0 +1,7 @@
+---
+title: userFills
+description: Per-user fills — snapshot then live updates over the same WebSocket
+openapi-schema: "live-data/openapi-websocket.json UserFillsSnapshot"
+---
+
+Subscribe with `{"method":"subscribe","subscription":{"type":"userFills","user":"0x..."}}` (optional `aggregateByTime`). Initial payload matches **`UserFillsSnapshot`**; subsequent events use **`UserFillsUpdate`** in `components/schemas` of the same OpenAPI file.

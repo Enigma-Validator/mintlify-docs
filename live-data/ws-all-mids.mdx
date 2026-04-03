@@ -1,0 +1,7 @@
+---
+title: allMids
+description: Mid prices for all coins — polled and pushed on change
+openapi-schema: "live-data/openapi-websocket.json AllMidsSnapshot"
+---
+
+Subscribe with `{"method":"subscribe","subscription":{"type":"allMids"}}` (optional `dex`). Acknowledgement uses **`subscriptionResponse`** (see **`SubscriptionResponseAck`**). Snapshots use **`AllMidsSnapshot`**; changes use **`AllMidsUpdate`**.
