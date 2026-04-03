@@ -9,30 +9,6 @@
   },
   "favicon": "/favicon.svg",
   "navigation": {
-    "global": {
-      "anchors": [
-        {
-          "anchor": "Twitter",
-          "icon": "x",
-          "href": "https://x.com/hypedexer"
-        },
-        {
-          "anchor": "Discord",
-          "icon": "discord",
-          "href": "https://discord.com/invite/cbKncMeZ52"
-        },
-        {
-          "anchor": "Telegram",
-          "icon": "telegram",
-          "href": "https://t.me/c/EnigmaValidatorCommunity/13"
-        },
-        {
-          "anchor": "Email",
-          "icon": "envelope",
-          "href": "mailto:contact@hypedexer.com"
-        }
-      ]
-    },
     "tabs": [
       {
         "tab": "Overview",
@@ -44,6 +20,15 @@
               "guides/environments-and-regions-eu-jp",
               "guides/authentication-and-api-keys",
               "guides/base-urls-and-versioning"
+            ]
+          },
+          {
+            "group": "API documentation",
+            "pages": [
+              "api/introduction",
+              "api/generate-api-key",
+              "api/notation",
+              "api/features"
             ]
           },
           {
@@ -65,23 +50,15 @@
         ]
       },
       {
-        "tab": "API reference",
+        "tab": "Historical data",
         "groups": [
           {
-            "group": "API documentation",
-            "pages": [
-              "api/introduction",
-              "api/generate-api-key",
-              "api/notation",
-              "api/features"
-            ]
+            "group": "Introduction",
+            "pages": ["historical/index"]
           },
           {
-            "group": "REST API",
-            "openapi": "api-reference/openapi.json",
-            "pages": [
-              "api-reference/live"
-            ]
+            "group": "REST — HL Indexer",
+            "openapi": "api-reference/openapi.json"
           },
           {
             "group": "WebSocket",
@@ -96,21 +73,48 @@
             ]
           }
         ]
-      },{
-  "tab": "Testnet (HIP-4)",
-  "groups": [
-    {
-      "group": "HIP-4 Prediction Markets",
-      "pages": [
-        "testnet/overview"
-      ]
-    },
-    {
-      "group": "REST API",
-      "openapi": "api-reference/openapi-hip4.json"
-    }
-  ]
-}
+      },
+      {
+        "tab": "Live data",
+        "groups": [
+          {
+            "group": "Introduction",
+            "pages": ["live-data/index"]
+          },
+          {
+            "group": "Live Data REST API",
+            "openapi": "live-data/openapi-rest.json"
+          },
+          {
+            "group": "Live Data WebSocket API",
+            "openapi": "live-data/openapi-websocket.json",
+            "pages": [
+              "live-data/websocket",
+              "GET /ws",
+              "live-data/ws-user-fills",
+              "live-data/ws-all-fills",
+              "live-data/ws-all-mids",
+              "live-data/ws-trades",
+              "live-data/ws-l2-book",
+              "live-data/ws-l4-book",
+              "live-data/ws-l4-book-updates"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "HIP-4 (Testnet)",
+        "groups": [
+          {
+            "group": "Prediction markets",
+            "pages": ["testnet/overview"]
+          },
+          {
+            "group": "REST API",
+            "openapi": "api-reference/openapi-hip4.json"
+          }
+        ]
+      }
     ]
   },
   "logo": {
@@ -143,10 +147,16 @@
     ]
   },
   "footer": {
-    "socials": {
-      "x": "https://x.com/hypedexer",
-      "github": "https://github.com/mintlify",
-      "linkedin": "https://linkedin.com/company/mintlify"
-    }
+    "links": [
+      {
+        "header": "Community",
+        "items": [
+          { "label": "Twitter", "href": "https://x.com/hypedexer" },
+          { "label": "Discord", "href": "https://discord.com/invite/cbKncMeZ52" },
+          { "label": "Telegram", "href": "https://t.me/c/EnigmaValidatorCommunity/13" },
+          { "label": "Email", "href": "mailto:contact@hypedexer.com" }
+        ]
+      }
+    ]
   }
 }

@@ -1,0 +1,3312 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Hypedexer Live Data — REST API",
+    "version": "0.1.0",
+    "description": "**HTTP:** All operations below use `POST {server}/info` with a JSON body. Path segments like `/info/metaAndAssetCtxs` are for documentation only — always POST to `/info` with the body described for each operation.\n\nREST API for real-time Hyperliquid market data served from a local fullnode.\n\nAll data is accessed through a single unified endpoint `POST /info` that dispatches based on the `type` field in the JSON body.\n\n## Request types\n\n| Type | Description | Handled |\n|------|-------------|----------|\n| `metaAndAssetCtxs` | Asset context (funding, OI, prices) | Locally (Redis cache) |\n| `allMids` | Mid prices for all coins | Locally (Redis cache) |\n| `userFills` / `userFillsByTime` | Fills for a specific user | Locally (volume files) |\n| `allFills` | All fills globally | Locally (volume files) |\n| `trades` | Trade data | Locally (volume files) |\n| `l2Book` / `l2Books` | L2 order book snapshot | Locally |\n| `availableDates` | Available data dates | Locally |\n| `clearinghouseState` | Clearinghouse state (single/multi-user) | Locally with upstream proxy per user |\n| `meta`, `spotMeta`, `openOrders`, ... | Proxied to local Hyperliquid node | Proxied to upstream |\n\n## Authentication\n\nOptional. When `API_KEY` is configured on the server, all requests must include:\n```\nAuthorization: Bearer <API_KEY>\n```\n\n## Response format\n\nMost types return:\n```json\n{ \"result\": <data>, \"cursor\": null }\n```\n\n`allMids` returns the result directly (not wrapped):\n```json\n{ \"BTC\": \"66764.5\", \"ETH\": \"3421.2\" }\n```\n\nProxied types return the upstream response as-is.",
+    "contact": {
+      "name": "Hypedexer"
+    }
+  },
+  "servers": [
+    {
+      "url": "https://api.hypedexer.com",
+      "description": "Production — Live fullnode data"
+    }
+  ],
+  "tags": [
+    {
+      "name": "Health",
+      "description": "Service health and info."
+    },
+    {
+      "name": "Asset Context",
+      "description": "Real-time asset context data: funding, open interest, oracle/mark/mid prices, volumes. Sourced from Redis cache populated by the asset context worker."
+    },
+    {
+      "name": "Mid Prices",
+      "description": "Mid prices for all coins, optionally filtered by DEX."
+    },
+    {
+      "name": "Fills",
+      "description": "Executed fills from the Hyperliquid fullnode volumes. Supports user-specific and global queries."
+    },
+    {
+      "name": "Trades",
+      "description": "Trade data from the fullnode volumes."
+    },
+    {
+      "name": "Order Book",
+      "description": "L2 order book snapshots."
+    },
+    {
+      "name": "Metadata",
+      "description": "Volume availability and data metadata."
+    },
+    {
+      "name": "Clearinghouse",
+      "description": "Clearinghouse state with multi-user support. Each user is fetched individually from the upstream Hyperliquid node."
+    },
+    {
+      "name": "Perpetuals",
+      "description": "Perpetual market metadata, margin, OI caps, DEX configs. "
+    },
+    {
+      "name": "Spot",
+      "description": "Spot market metadata, balances, and deploy state. "
+    },
+    {
+      "name": "Trading",
+      "description": "Orders, positions, and active asset data. "
+    },
+    {
+      "name": "Account",
+      "description": "User account info: fees, rate limits, sub-accounts, agents, roles. "
+    },
+    {
+      "name": "Vaults",
+      "description": "Vault summaries, equities, and leaderboards. "
+    },
+    {
+      "name": "Staking",
+      "description": "Delegations, staking summaries, and validator votes. "
+    },
+    {
+      "name": "Exchange",
+      "description": "Exchange status, liquidatable positions, web data. "
+    }
+  ],
+  "paths": {
+    "/": {
+      "get": {
+        "tags": [
+          "Health"
+        ],
+        "summary": "Service info",
+        "description": "Returns basic service information and endpoint pointers.",
+        "responses": {
+          "200": {
+            "description": "Service info",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "service": {
+                      "type": "string",
+                      "example": "hypedexer-livedata"
+                    },
+                    "docs": {
+                      "type": "string",
+                      "example": "/docs"
+                    },
+                    "rest": {
+                      "type": "string",
+                      "example": "POST /info"
+                    },
+                    "websocket": {
+                      "type": "string",
+                      "example": "GET /ws"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/info/metaAndAssetCtxs": {
+      "post": {
+        "tags": [
+          "Asset Context"
+        ],
+        "summary": "Get asset context for a coin",
+        "operationId": "metaAndAssetCtxs",
+        "description": "Returns the asset context for a specific coin: funding rate, open interest, oracle/mark/mid prices, premium, volumes, and impact prices.\n\nData is served from Redis cache, populated by a background worker that replays fullnode volume events and periodically refreshes from the Hyperliquid API.\n\nAlso accepts `type: \"assetContext\"` as an alias.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "type",
+                  "coin"
+                ],
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "enum": [
+                      "metaAndAssetCtxs",
+                      "assetContext"
+                    ]
+                  },
+                  "coin": {
+                    "type": "string",
+                    "description": "Coin symbol",
+                    "example": "BTC"
+                  }
+                }
+              },
+              "example": {
+                "type": "metaAndAssetCtxs",
+                "coin": "BTC"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Asset context for the requested coin. Returns an empty context (all fields null) if no data is cached.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "result": {
+                      "$ref": "#/components/schemas/AssetContext"
+                    }
+                  }
+                },
+                "example": {
+                  "result": {
+                    "funding": "-0.0000056499",
+                    "openInterest": "27328.306520",
+                    "prevDayPx": "65633",
+                    "dayNtlVlm": "2290705901.9124403",
+                    "premium": "-0.0005538756",
+                    "oraclePx": "66802",
+                    "markPx": "66765",
+                    "midPx": "66764.5",
+                    "impactPxs": [
+                      "66764",
+                      "66765"
+                    ],
+                    "dayBaseVlm": "34250.45488"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Missing `coin` parameter",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "error": "coin required"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ]
+      }
+    },
+    "/info/allMids": {
+      "post": {
+        "tags": [
+          "Mid Prices"
+        ],
+        "summary": "Get mid prices for all coins",
+        "operationId": "allMids",
+        "description": "Returns a map of coin symbol to mid price for all available coins.\n\nOptionally filter by DEX:\n- Omit `dex` or set to `null` → perps only\n- `\"ALL_DEXS\"` → all DEXes and perps combined\n- A specific DEX name (e.g. `\"ORCA\"`) → only that DEX\n\n**Note:** This type returns the result directly (not wrapped in `{\"result\": ...}`).",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "type"
+                ],
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "enum": [
+                      "allMids"
+                    ]
+                  },
+                  "dex": {
+                    "type": "string",
+                    "nullable": true,
+                    "description": "DEX filter. Omit for perps only, `ALL_DEXS` for all, or a specific DEX name.",
+                    "example": "ALL_DEXS"
+                  }
+                }
+              },
+              "examples": {
+                "perps_only": {
+                  "summary": "Perps only (default)",
+                  "value": {
+                    "type": "allMids"
+                  }
+                },
+                "all_dexs": {
+                  "summary": "All DEXes + perps",
+                  "value": {
+                    "type": "allMids",
+                    "dex": "ALL_DEXS"
+                  }
+                },
+                "specific_dex": {
+                  "summary": "Specific DEX",
+                  "value": {
+                    "type": "allMids",
+                    "dex": "ORCA"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Map of coin symbol to mid price string. Returned directly (no `result` wrapper).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AllMids"
+                },
+                "example": {
+                  "BTC": "66764.5",
+                  "ETH": "3421.2",
+                  "SOL": "150.75"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ]
+      }
+    },
+    "/info/userFills": {
+      "post": {
+        "tags": [
+          "Fills"
+        ],
+        "summary": "Get fills for a specific user",
+        "operationId": "userFills",
+        "description": "Returns fills for one or more Ethereum addresses. Reads from the `node_fills` fullnode volume files.\n\nAccepts both `type: \"userFills\"` and `type: \"userFillsByTime\"` (identical behavior).\n\nProvide either `user` (single address) or `addresses` (list). Addresses are matched case-insensitively.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "type"
+                ],
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "enum": [
+                      "userFills",
+                      "userFillsByTime"
+                    ]
+                  },
+                  "user": {
+                    "type": "string",
+                    "description": "Single Ethereum address (0x-prefixed)",
+                    "example": "0xabc123..."
+                  },
+                  "addresses": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    },
+                    "description": "List of Ethereum addresses. Takes precedence over `user` if both provided."
+                  },
+                  "startTime": {
+                    "type": "integer",
+                    "description": "Start timestamp in milliseconds since epoch",
+                    "example": 1700000000000
+                  },
+                  "endTime": {
+                    "type": "integer",
+                    "description": "End timestamp in milliseconds since epoch",
+                    "example": 1700100000000
+                  },
+                  "limit": {
+                    "type": "integer",
+                    "description": "Maximum number of results to return",
+                    "default": 100,
+                    "example": 50
+                  }
+                }
+              },
+              "examples": {
+                "single_user": {
+                  "summary": "Single user",
+                  "value": {
+                    "type": "userFills",
+                    "user": "0xabc123...",
+                    "startTime": 1700000000000,
+                    "limit": 50
+                  }
+                },
+                "multiple_users": {
+                  "summary": "Multiple users with time range",
+                  "value": {
+                    "type": "userFillsByTime",
+                    "addresses": [
+                      "0xabc...",
+                      "0xdef..."
+                    ],
+                    "startTime": 1700000000000,
+                    "endTime": 1700100000000
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "List of fills with associated address",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "result": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/AddressedFill"
+                      }
+                    }
+                  }
+                },
+                "example": {
+                  "result": [
+                    {
+                      "address": "0xabc123...",
+                      "fill": {
+                        "coin": "BTC",
+                        "px": "65000.5",
+                        "sz": "0.1",
+                        "side": "B",
+                        "time": 1700000050000,
+                        "startPosition": "0.0",
+                        "dir": "Open Long",
+                        "closedPnl": "0.0",
+                        "hash": "0x...",
+                        "oid": 12345,
+                        "crossed": true,
+                        "fee": "1.625",
+                        "tid": 67890,
+                        "feeToken": "USDC"
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Missing `user` or `addresses` parameter",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "error": "addresses or user required"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ]
+      }
+    },
+    "/info/allFills": {
+      "post": {
+        "tags": [
+          "Fills"
+        ],
+        "summary": "Get all fills globally",
+        "operationId": "allFills",
+        "description": "Returns all fills across all users from the `node_fills` fullnode volumes. Optionally filter by coin and time range.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "type"
+                ],
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "enum": [
+                      "allFills"
+                    ]
+                  },
+                  "coin": {
+                    "type": "string",
+                    "description": "Filter by coin symbol",
+                    "example": "ETH"
+                  },
+                  "startTime": {
+                    "type": "integer",
+                    "description": "Start timestamp in milliseconds"
+                  },
+                  "endTime": {
+                    "type": "integer",
+                    "description": "End timestamp in milliseconds"
+                  },
+                  "limit": {
+                    "type": "integer",
+                    "default": 100
+                  }
+                }
+              },
+              "example": {
+                "type": "allFills",
+                "coin": "ETH",
+                "limit": 100
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "List of fills with associated address",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "result": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/AddressedFill"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ]
+      }
+    },
+    "/info/trades": {
+      "post": {
+        "tags": [
+          "Trades"
+        ],
+        "summary": "Get trades",
+        "operationId": "trades",
+        "description": "Returns trade data from the `node_trades` fullnode volumes. Optionally filter by coin and time range.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "type"
+                ],
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "enum": [
+                      "trades"
+                    ]
+                  },
+                  "coin": {
+                    "type": "string",
+                    "description": "Filter by coin symbol",
+                    "example": "BTC"
+                  },
+                  "startTime": {
+                    "type": "integer",
+                    "description": "Start timestamp in milliseconds"
+                  },
+                  "endTime": {
+                    "type": "integer",
+                    "description": "End timestamp in milliseconds"
+                  },
+                  "limit": {
+                    "type": "integer",
+                    "default": 100
+                  }
+                }
+              },
+              "example": {
+                "type": "trades",
+                "coin": "BTC",
+                "limit": 50
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "List of trades",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "result": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Trade"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ]
+      }
+    },
+    "/info/l2Book": {
+      "post": {
+        "tags": [
+          "Order Book"
+        ],
+        "summary": "Get L2 order book snapshot",
+        "operationId": "l2Book",
+        "description": "Returns an L2 order book snapshot for a coin.\n\nAlso accepts `type: \"l2Books\"` with a `coins` array parameter (returns the first coin's book).",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "type"
+                ],
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "enum": [
+                      "l2Book",
+                      "l2Books"
+                    ]
+                  },
+                  "coin": {
+                    "type": "string",
+                    "description": "Coin symbol (for l2Book)",
+                    "example": "BTC"
+                  },
+                  "coins": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    },
+                    "description": "List of coin symbols (for l2Books, uses first coin)"
+                  }
+                }
+              },
+              "example": {
+                "type": "l2Book",
+                "coin": "BTC"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "L2 book snapshot",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "result": {
+                      "$ref": "#/components/schemas/L2BookSnapshot"
+                    }
+                  }
+                },
+                "example": {
+                  "result": {
+                    "coin": "BTC",
+                    "levels": [],
+                    "timestamp": null
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Missing `coin` or `coins` parameter",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "error": "coin or coins required"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ]
+      }
+    },
+    "/info/availableDates": {
+      "post": {
+        "tags": [
+          "Metadata"
+        ],
+        "summary": "List available data dates",
+        "operationId": "availableDates",
+        "description": "Returns the list of available date directories in the fullnode volume data. Useful for determining the data range available for queries.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "type"
+                ],
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "enum": [
+                      "availableDates"
+                    ]
+                  },
+                  "volume": {
+                    "type": "string",
+                    "enum": [
+                      "node_fills",
+                      "node_trades"
+                    ],
+                    "default": "node_fills",
+                    "description": "Volume source to query"
+                  }
+                }
+              },
+              "example": {
+                "type": "availableDates",
+                "volume": "node_fills"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Available dates",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "result": {
+                      "type": "object",
+                      "properties": {
+                        "volume": {
+                          "type": "string",
+                          "example": "node_fills"
+                        },
+                        "dates": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          },
+                          "example": [
+                            "20240101",
+                            "20240102",
+                            "20240103"
+                          ]
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ]
+      }
+    },
+    "/info/clearinghouseState": {
+      "post": {
+        "tags": [
+          "Clearinghouse"
+        ],
+        "summary": "Get clearinghouse state",
+        "operationId": "clearinghouseState",
+        "description": "Returns the clearinghouse state for one or more users. Each user is fetched individually from the upstream Hyperliquid node.\n\n**Single user:** Provide `user` → returns the upstream result directly.\n\n**Multi-user:** Provide `users` array → returns a map of `{ address: result }` for each user (fetched in parallel).\n\nOptionally pass `dex` to filter by DEX.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "type"
+                ],
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "enum": [
+                      "clearinghouseState"
+                    ]
+                  },
+                  "user": {
+                    "type": "string",
+                    "description": "Single Ethereum address",
+                    "example": "0xabc..."
+                  },
+                  "users": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    },
+                    "description": "List of Ethereum addresses (multi-user mode)"
+                  },
+                  "dex": {
+                    "type": "string",
+                    "description": "DEX filter",
+                    "example": "ORCA"
+                  }
+                }
+              },
+              "examples": {
+                "single_user": {
+                  "summary": "Single user",
+                  "value": {
+                    "type": "clearinghouseState",
+                    "user": "0xabc..."
+                  }
+                },
+                "multi_user": {
+                  "summary": "Multiple users",
+                  "value": {
+                    "type": "clearinghouseState",
+                    "users": [
+                      "0xabc...",
+                      "0xdef..."
+                    ]
+                  }
+                },
+                "with_dex": {
+                  "summary": "With DEX filter",
+                  "value": {
+                    "type": "clearinghouseState",
+                    "user": "0xabc...",
+                    "dex": "ORCA"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Clearinghouse state. Single user: upstream result directly. Multi-user: `{ address: result }` map.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "type": "object",
+                      "description": "Single-user result (upstream response as-is)"
+                    },
+                    {
+                      "type": "object",
+                      "description": "Multi-user result: map of address to upstream response",
+                      "additionalProperties": {
+                        "type": "object"
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Missing `user` or `users` parameter",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "error": "user or users required"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "502": {
+            "$ref": "#/components/responses/UpstreamUnreachable"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ]
+      }
+    },
+    "/info/meta": {
+      "post": {
+        "tags": [
+          "Perpetuals"
+        ],
+        "summary": "Perpetual metadata",
+        "operationId": "meta",
+        "description": "Returns perpetual asset metadata: universe of listed perps with size decimals, max leverage, margin mode, and margin tier tables.\n\n**",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "type"
+                ],
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "enum": [
+                      "meta"
+                    ]
+                  },
+                  "dex": {
+                    "type": "string",
+                    "description": "Perp dex name. Defaults to the empty string (first perp dex)."
+                  }
+                }
+              },
+              "example": {
+                "type": "meta"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Perpetual metadata",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "universe": {
+                      "type": "array",
+                      "description": "Listed perpetual assets",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "name": {
+                            "type": "string",
+                            "example": "BTC"
+                          },
+                          "szDecimals": {
+                            "type": "integer",
+                            "example": 5
+                          },
+                          "maxLeverage": {
+                            "type": "integer",
+                            "example": 50
+                          },
+                          "onlyIsolated": {
+                            "type": "boolean"
+                          },
+                          "isDelisted": {
+                            "type": "boolean"
+                          }
+                        }
+                      }
+                    },
+                    "marginTables": {
+                      "type": "array",
+                      "description": "Margin tier configurations"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "502": {
+            "$ref": "#/components/responses/UpstreamUnreachable"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ]
+      }
+    },
+    "/info/spotMeta": {
+      "post": {
+        "tags": [
+          "Spot"
+        ],
+        "summary": "Spot metadata",
+        "operationId": "spotMeta",
+        "description": "Returns spot trading metadata: token definitions (name, decimals, token ID) and trading pair universe.\n\n**",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "type"
+                ],
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "enum": [
+                      "spotMeta"
+                    ]
+                  }
+                }
+              },
+              "example": {
+                "type": "spotMeta"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Spot metadata",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "tokens": {
+                      "type": "array",
+                      "description": "Token definitions",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "name": {
+                            "type": "string",
+                            "example": "USDC"
+                          },
+                          "szDecimals": {
+                            "type": "integer",
+                            "example": 8
+                          },
+                          "weiDecimals": {
+                            "type": "integer",
+                            "example": 8
+                          },
+                          "index": {
+                            "type": "integer",
+                            "example": 0
+                          },
+                          "tokenId": {
+                            "type": "string",
+                            "description": "Onchain token identifier"
+                          },
+                          "isCanonical": {
+                            "type": "boolean"
+                          },
+                          "evmContract": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "fullName": {
+                            "type": "string",
+                            "nullable": true
+                          }
+                        }
+                      }
+                    },
+                    "universe": {
+                      "type": "array",
+                      "description": "Spot trading pairs",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "name": {
+                            "type": "string",
+                            "example": "PURR/USDC"
+                          },
+                          "tokens": {
+                            "type": "array",
+                            "items": {
+                              "type": "integer"
+                            },
+                            "description": "[base_index, quote_index]"
+                          },
+                          "index": {
+                            "type": "integer"
+                          },
+                          "isCanonical": {
+                            "type": "boolean"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "502": {
+            "$ref": "#/components/responses/UpstreamUnreachable"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ]
+      }
+    },
+    "/info/spotClearinghouseState": {
+      "post": {
+        "tags": [
+          "Spot"
+        ],
+        "summary": "Spot clearinghouse state",
+        "operationId": "spotClearinghouseState",
+        "description": "Returns the spot balances for a user: token holdings with total, held, and entry notional amounts.\n\n**",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "type",
+                  "user"
+                ],
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "enum": [
+                      "spotClearinghouseState"
+                    ]
+                  },
+                  "user": {
+                    "type": "string",
+                    "description": "42-character hex address",
+                    "example": "0xabc..."
+                  }
+                }
+              },
+              "example": {
+                "type": "spotClearinghouseState",
+                "user": "0xabc..."
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Spot balances",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "balances": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "coin": {
+                            "type": "string",
+                            "example": "USDC"
+                          },
+                          "token": {
+                            "type": "integer",
+                            "example": 0
+                          },
+                          "hold": {
+                            "type": "string",
+                            "example": "0.0"
+                          },
+                          "total": {
+                            "type": "string",
+                            "example": "14.625485"
+                          },
+                          "entryNtl": {
+                            "type": "string",
+                            "example": "0.0"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "502": {
+            "$ref": "#/components/responses/UpstreamUnreachable"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ]
+      }
+    },
+    "/info/openOrders": {
+      "post": {
+        "tags": [
+          "Trading"
+        ],
+        "summary": "Open orders",
+        "operationId": "openOrders",
+        "description": "Returns the list of open orders for a user. Basic order fields: coin, price, side, size, timestamp.\n\n**",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "type",
+                  "user"
+                ],
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "enum": [
+                      "openOrders"
+                    ]
+                  },
+                  "user": {
+                    "type": "string",
+                    "description": "42-character hex address",
+                    "example": "0xabc..."
+                  },
+                  "dex": {
+                    "type": "string",
+                    "description": "Perp dex name. Defaults to first perp dex."
+                  }
+                }
+              },
+              "example": {
+                "type": "openOrders",
+                "user": "0xabc..."
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Array of open orders",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "coin": {
+                        "type": "string",
+                        "example": "BTC"
+                      },
+                      "limitPx": {
+                        "type": "string",
+                        "example": "29792.0"
+                      },
+                      "oid": {
+                        "type": "integer",
+                        "example": 91490942
+                      },
+                      "side": {
+                        "type": "string",
+                        "enum": [
+                          "A",
+                          "B"
+                        ]
+                      },
+                      "sz": {
+                        "type": "string",
+                        "example": "0.5"
+                      },
+                      "timestamp": {
+                        "type": "integer",
+                        "example": 1681247412573
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "502": {
+            "$ref": "#/components/responses/UpstreamUnreachable"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ]
+      }
+    },
+    "/info/frontendOpenOrders": {
+      "post": {
+        "tags": [
+          "Trading"
+        ],
+        "summary": "Open orders (extended)",
+        "operationId": "frontendOpenOrders",
+        "description": "Like `openOrders` but with additional fields: order type, original size, reduce-only flag, trigger conditions, and TP/SL info.\n\n**",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "type",
+                  "user"
+                ],
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "enum": [
+                      "frontendOpenOrders"
+                    ]
+                  },
+                  "user": {
+                    "type": "string",
+                    "description": "42-character hex address",
+                    "example": "0xabc..."
+                  },
+                  "dex": {
+                    "type": "string",
+                    "description": "Perp dex name. Defaults to first perp dex."
+                  }
+                }
+              },
+              "example": {
+                "type": "frontendOpenOrders",
+                "user": "0xabc..."
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Array of open orders with extended details",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "coin": {
+                        "type": "string"
+                      },
+                      "limitPx": {
+                        "type": "string"
+                      },
+                      "oid": {
+                        "type": "integer"
+                      },
+                      "side": {
+                        "type": "string",
+                        "enum": [
+                          "A",
+                          "B"
+                        ]
+                      },
+                      "sz": {
+                        "type": "string"
+                      },
+                      "origSz": {
+                        "type": "string",
+                        "description": "Original order size"
+                      },
+                      "orderType": {
+                        "type": "string",
+                        "description": "e.g. Limit, Stop Market, Take Profit"
+                      },
+                      "timestamp": {
+                        "type": "integer"
+                      },
+                      "isTrigger": {
+                        "type": "boolean"
+                      },
+                      "isPositionTpsl": {
+                        "type": "boolean"
+                      },
+                      "reduceOnly": {
+                        "type": "boolean"
+                      },
+                      "triggerPx": {
+                        "type": "string",
+                        "nullable": true
+                      },
+                      "triggerCondition": {
+                        "type": "string",
+                        "nullable": true
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "502": {
+            "$ref": "#/components/responses/UpstreamUnreachable"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ]
+      }
+    },
+    "/info/exchangeStatus": {
+      "post": {
+        "tags": [
+          "Exchange"
+        ],
+        "summary": "Exchange status",
+        "operationId": "exchangeStatus",
+        "description": "Returns the current exchange status and operational state.\n\n**",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "type"
+                ],
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "enum": [
+                      "exchangeStatus"
+                    ]
+                  }
+                }
+              },
+              "example": {
+                "type": "exchangeStatus"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Exchange status object"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "502": {
+            "$ref": "#/components/responses/UpstreamUnreachable"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ]
+      }
+    },
+    "/info/liquidatable": {
+      "post": {
+        "tags": [
+          "Exchange"
+        ],
+        "summary": "Liquidatable positions",
+        "operationId": "liquidatable",
+        "description": "Returns positions that are currently eligible for liquidation.\n\n**",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "type"
+                ],
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "enum": [
+                      "liquidatable"
+                    ]
+                  }
+                }
+              },
+              "example": {
+                "type": "liquidatable"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Array of liquidatable positions"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "502": {
+            "$ref": "#/components/responses/UpstreamUnreachable"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ]
+      }
+    },
+    "/info/activeAssetData": {
+      "post": {
+        "tags": [
+          "Trading"
+        ],
+        "summary": "Active asset data for a user",
+        "operationId": "activeAssetData",
+        "description": "Returns the user's active position data for a specific coin: current leverage, max trade sizes, available-to-trade amounts, and mark price.\n\n**",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "type",
+                  "user",
+                  "coin"
+                ],
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "enum": [
+                      "activeAssetData"
+                    ]
+                  },
+                  "user": {
+                    "type": "string",
+                    "description": "42-character hex address",
+                    "example": "0xabc..."
+                  },
+                  "coin": {
+                    "type": "string",
+                    "description": "Coin symbol",
+                    "example": "ETH"
+                  }
+                }
+              },
+              "example": {
+                "type": "activeAssetData",
+                "user": "0xabc...",
+                "coin": "ETH"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Active asset data",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "user": {
+                      "type": "string"
+                    },
+                    "coin": {
+                      "type": "string"
+                    },
+                    "leverage": {
+                      "type": "object",
+                      "properties": {
+                        "type": {
+                          "type": "string",
+                          "enum": [
+                            "cross",
+                            "isolated"
+                          ],
+                          "example": "cross"
+                        },
+                        "value": {
+                          "type": "integer",
+                          "example": 3
+                        }
+                      }
+                    },
+                    "maxTradeSzs": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      },
+                      "description": "[max_long, max_short]"
+                    },
+                    "availableToTrade": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      },
+                      "description": "[available_long, available_short]"
+                    },
+                    "markPx": {
+                      "type": "string",
+                      "example": "4.4716"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "502": {
+            "$ref": "#/components/responses/UpstreamUnreachable"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ]
+      }
+    },
+    "/info/maxMarketOrderNtls": {
+      "post": {
+        "tags": [
+          "Trading"
+        ],
+        "summary": "Max market order notionals",
+        "operationId": "maxMarketOrderNtls",
+        "description": "Returns the maximum notional values allowed for market orders on each asset.\n\n**",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "type"
+                ],
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "enum": [
+                      "maxMarketOrderNtls"
+                    ]
+                  }
+                }
+              },
+              "example": {
+                "type": "maxMarketOrderNtls"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Max market order notionals per asset"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "502": {
+            "$ref": "#/components/responses/UpstreamUnreachable"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ]
+      }
+    },
+    "/info/vaultSummaries": {
+      "post": {
+        "tags": [
+          "Vaults"
+        ],
+        "summary": "Vault summaries",
+        "operationId": "vaultSummaries",
+        "description": "Returns summary information for all vaults.\n\n**",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "type"
+                ],
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "enum": [
+                      "vaultSummaries"
+                    ]
+                  }
+                }
+              },
+              "example": {
+                "type": "vaultSummaries"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Array of vault summary objects"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "502": {
+            "$ref": "#/components/responses/UpstreamUnreachable"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ]
+      }
+    },
+    "/info/userVaultEquities": {
+      "post": {
+        "tags": [
+          "Vaults"
+        ],
+        "summary": "User vault equities",
+        "operationId": "userVaultEquities",
+        "description": "Returns the user's equity in each vault they have deposited into.\n\n**",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "type",
+                  "user"
+                ],
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "enum": [
+                      "userVaultEquities"
+                    ]
+                  },
+                  "user": {
+                    "type": "string",
+                    "description": "42-character hex address",
+                    "example": "0xabc..."
+                  }
+                }
+              },
+              "example": {
+                "type": "userVaultEquities",
+                "user": "0xabc..."
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "User vault equities",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "vaultAddress": {
+                        "type": "string",
+                        "example": "0xdfc24b077bc1425ad1dea75bcb6f8158e10df303"
+                      },
+                      "equity": {
+                        "type": "string",
+                        "example": "742500.082809"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "502": {
+            "$ref": "#/components/responses/UpstreamUnreachable"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ]
+      }
+    },
+    "/info/leadingVaults": {
+      "post": {
+        "tags": [
+          "Vaults"
+        ],
+        "summary": "Leading vaults",
+        "operationId": "leadingVaults",
+        "description": "Returns the top-performing vaults ranked by performance metrics.\n\n**",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "type"
+                ],
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "enum": [
+                      "leadingVaults"
+                    ]
+                  }
+                }
+              },
+              "example": {
+                "type": "leadingVaults"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Array of leading vault objects with performance data"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "502": {
+            "$ref": "#/components/responses/UpstreamUnreachable"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ]
+      }
+    },
+    "/info/extraAgents": {
+      "post": {
+        "tags": [
+          "Account"
+        ],
+        "summary": "Extra agents (API wallets)",
+        "operationId": "extraAgents",
+        "description": "Returns the list of extra agents (API wallets) authorized by a user for programmatic trading.\n\n**",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "type",
+                  "user"
+                ],
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "enum": [
+                      "extraAgents"
+                    ]
+                  },
+                  "user": {
+                    "type": "string",
+                    "description": "42-character hex address",
+                    "example": "0xabc..."
+                  }
+                }
+              },
+              "example": {
+                "type": "extraAgents",
+                "user": "0xabc..."
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Array of authorized agent addresses"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "502": {
+            "$ref": "#/components/responses/UpstreamUnreachable"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ]
+      }
+    },
+    "/info/subAccounts": {
+      "post": {
+        "tags": [
+          "Account"
+        ],
+        "summary": "Sub-accounts",
+        "operationId": "subAccounts",
+        "description": "Returns the user's sub-accounts with their name, address, clearinghouse state, and spot state.\n\n**",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "type",
+                  "user"
+                ],
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "enum": [
+                      "subAccounts"
+                    ]
+                  },
+                  "user": {
+                    "type": "string",
+                    "description": "42-character hex address",
+                    "example": "0xabc..."
+                  }
+                }
+              },
+              "example": {
+                "type": "subAccounts",
+                "user": "0xabc..."
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Array of sub-account objects",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "name": {
+                        "type": "string",
+                        "example": "Test"
+                      },
+                      "subAccountUser": {
+                        "type": "string",
+                        "description": "Sub-account address"
+                      },
+                      "master": {
+                        "type": "string",
+                        "description": "Master account address"
+                      },
+                      "clearinghouseState": {
+                        "type": "object",
+                        "description": "Perp clearinghouse state"
+                      },
+                      "spotState": {
+                        "type": "object",
+                        "description": "Spot clearinghouse state"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "502": {
+            "$ref": "#/components/responses/UpstreamUnreachable"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ]
+      }
+    },
+    "/info/userFees": {
+      "post": {
+        "tags": [
+          "Account"
+        ],
+        "summary": "User fee schedule",
+        "operationId": "userFees",
+        "description": "Returns the user's fee schedule, current rates, daily volume breakdown, trial status, and staking discount information.\n\n**",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "type",
+                  "user"
+                ],
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "enum": [
+                      "userFees"
+                    ]
+                  },
+                  "user": {
+                    "type": "string",
+                    "description": "42-character hex address",
+                    "example": "0xabc..."
+                  }
+                }
+              },
+              "example": {
+                "type": "userFees",
+                "user": "0xabc..."
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Fee schedule and rates",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "dailyUserVlm": {
+                      "type": "array",
+                      "description": "Daily volume breakdown"
+                    },
+                    "feeSchedule": {
+                      "type": "object",
+                      "description": "Fee tier schedule"
+                    },
+                    "userCrossRate": {
+                      "type": "string",
+                      "example": "0.000315"
+                    },
+                    "userAddRate": {
+                      "type": "string",
+                      "example": "0.0001"
+                    },
+                    "activeReferralDiscount": {
+                      "type": "string",
+                      "example": "0.0"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "502": {
+            "$ref": "#/components/responses/UpstreamUnreachable"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ]
+      }
+    },
+    "/info/userRateLimit": {
+      "post": {
+        "tags": [
+          "Account"
+        ],
+        "summary": "User rate limit",
+        "operationId": "userRateLimit",
+        "description": "Returns the user's current rate limit status: cumulative volume, requests used, requests cap, and surplus.\n\n**",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "type",
+                  "user"
+                ],
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "enum": [
+                      "userRateLimit"
+                    ]
+                  },
+                  "user": {
+                    "type": "string",
+                    "description": "42-character hex address",
+                    "example": "0xabc..."
+                  }
+                }
+              },
+              "example": {
+                "type": "userRateLimit",
+                "user": "0xabc..."
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Rate limit status",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "cumVlm": {
+                      "type": "string",
+                      "description": "Cumulative volume",
+                      "example": "2854574.593578"
+                    },
+                    "nRequestsUsed": {
+                      "type": "integer",
+                      "example": 2890
+                    },
+                    "nRequestsCap": {
+                      "type": "integer",
+                      "example": 2864574
+                    },
+                    "nRequestsSurplus": {
+                      "type": "integer",
+                      "example": 0
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "502": {
+            "$ref": "#/components/responses/UpstreamUnreachable"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ]
+      }
+    },
+    "/info/spotDeployState": {
+      "post": {
+        "tags": [
+          "Spot"
+        ],
+        "summary": "Spot deploy state",
+        "operationId": "spotDeployState",
+        "description": "Returns the current spot token deployment state and auction information.\n\n**",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "type"
+                ],
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "enum": [
+                      "spotDeployState"
+                    ]
+                  }
+                }
+              },
+              "example": {
+                "type": "spotDeployState"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Spot deploy state and auction info"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "502": {
+            "$ref": "#/components/responses/UpstreamUnreachable"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ]
+      }
+    },
+    "/info/perpDeployAuctionStatus": {
+      "post": {
+        "tags": [
+          "Perpetuals"
+        ],
+        "summary": "Perp deploy auction status",
+        "operationId": "perpDeployAuctionStatus",
+        "description": "Returns the current perpetual listing auction status: start time, duration, and gas prices (start, current, end).\n\n**",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "type"
+                ],
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "enum": [
+                      "perpDeployAuctionStatus"
+                    ]
+                  }
+                }
+              },
+              "example": {
+                "type": "perpDeployAuctionStatus"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Auction status",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "startTimeSeconds": {
+                      "type": "integer",
+                      "example": 1747656000
+                    },
+                    "durationSeconds": {
+                      "type": "integer",
+                      "example": 111600
+                    },
+                    "startGas": {
+                      "type": "string",
+                      "example": "500.0"
+                    },
+                    "currentGas": {
+                      "type": "string",
+                      "example": "500.0"
+                    },
+                    "endGas": {
+                      "type": "string",
+                      "nullable": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "502": {
+            "$ref": "#/components/responses/UpstreamUnreachable"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ]
+      }
+    },
+    "/info/delegations": {
+      "post": {
+        "tags": [
+          "Staking"
+        ],
+        "summary": "User delegations",
+        "operationId": "delegations",
+        "description": "Returns the user's active staking delegations: validator address, delegated amount, and lock-up expiry timestamp.\n\n**",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "type",
+                  "user"
+                ],
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "enum": [
+                      "delegations"
+                    ]
+                  },
+                  "user": {
+                    "type": "string",
+                    "description": "42-character hex address",
+                    "example": "0xabc..."
+                  }
+                }
+              },
+              "example": {
+                "type": "delegations",
+                "user": "0xabc..."
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Array of delegations",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "validator": {
+                        "type": "string",
+                        "description": "Validator address",
+                        "example": "0x5ac99df..."
+                      },
+                      "amount": {
+                        "type": "string",
+                        "example": "12060.16529862"
+                      },
+                      "lockedUntilTimestamp": {
+                        "type": "integer",
+                        "example": 1735466781353
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "502": {
+            "$ref": "#/components/responses/UpstreamUnreachable"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ]
+      }
+    },
+    "/info/delegatorSummary": {
+      "post": {
+        "tags": [
+          "Staking"
+        ],
+        "summary": "Delegator summary",
+        "operationId": "delegatorSummary",
+        "description": "Returns a summary of the user's staking activity: total delegated, undelegated, pending withdrawals.\n\n**",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "type",
+                  "user"
+                ],
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "enum": [
+                      "delegatorSummary"
+                    ]
+                  },
+                  "user": {
+                    "type": "string",
+                    "description": "42-character hex address",
+                    "example": "0xabc..."
+                  }
+                }
+              },
+              "example": {
+                "type": "delegatorSummary",
+                "user": "0xabc..."
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Delegator summary",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "delegated": {
+                      "type": "string",
+                      "example": "12060.16529862"
+                    },
+                    "undelegated": {
+                      "type": "string",
+                      "example": "0.0"
+                    },
+                    "totalPendingWithdrawal": {
+                      "type": "string",
+                      "example": "0.0"
+                    },
+                    "nPendingWithdrawals": {
+                      "type": "integer",
+                      "example": 0
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "502": {
+            "$ref": "#/components/responses/UpstreamUnreachable"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ]
+      }
+    },
+    "/info/maxBuilderFee": {
+      "post": {
+        "tags": [
+          "Account"
+        ],
+        "summary": "Max builder fee",
+        "operationId": "maxBuilderFee",
+        "description": "Returns the maximum fee a user has approved for a specific builder address. The value is in tenths of a basis point.\n\n**",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "type",
+                  "user",
+                  "builder"
+                ],
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "enum": [
+                      "maxBuilderFee"
+                    ]
+                  },
+                  "user": {
+                    "type": "string",
+                    "description": "User address (42-char hex)",
+                    "example": "0xabc..."
+                  },
+                  "builder": {
+                    "type": "string",
+                    "description": "Builder address (42-char hex)",
+                    "example": "0xdef..."
+                  }
+                }
+              },
+              "example": {
+                "type": "maxBuilderFee",
+                "user": "0xabc...",
+                "builder": "0xdef..."
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Max builder fee in tenths of a basis point",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "integer",
+                  "example": 1
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "502": {
+            "$ref": "#/components/responses/UpstreamUnreachable"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ]
+      }
+    },
+    "/info/userToMultiSigSigners": {
+      "post": {
+        "tags": [
+          "Account"
+        ],
+        "summary": "Multi-sig signers",
+        "operationId": "userToMultiSigSigners",
+        "description": "Returns the multi-sig signer configuration for a user address, if any.\n\n**",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "type",
+                  "user"
+                ],
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "enum": [
+                      "userToMultiSigSigners"
+                    ]
+                  },
+                  "user": {
+                    "type": "string",
+                    "description": "42-character hex address",
+                    "example": "0xabc..."
+                  }
+                }
+              },
+              "example": {
+                "type": "userToMultiSigSigners",
+                "user": "0xabc..."
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Multi-sig signer configuration (array of signer addresses and threshold)"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "502": {
+            "$ref": "#/components/responses/UpstreamUnreachable"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ]
+      }
+    },
+    "/info/userRole": {
+      "post": {
+        "tags": [
+          "Account"
+        ],
+        "summary": "User role",
+        "operationId": "userRole",
+        "description": "Returns the user's role: `\"user\"` for a normal user, `\"agent\"` for an API wallet (with the parent user in `data.user`).\n\n**",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "type",
+                  "user"
+                ],
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "enum": [
+                      "userRole"
+                    ]
+                  },
+                  "user": {
+                    "type": "string",
+                    "description": "42-character hex address",
+                    "example": "0xabc..."
+                  }
+                }
+              },
+              "example": {
+                "type": "userRole",
+                "user": "0xabc..."
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "User role",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "role": {
+                      "type": "string",
+                      "enum": [
+                        "user",
+                        "agent"
+                      ],
+                      "example": "user"
+                    },
+                    "data": {
+                      "type": "object",
+                      "nullable": true,
+                      "description": "Present when role is `agent`",
+                      "properties": {
+                        "user": {
+                          "type": "string",
+                          "description": "Parent user address"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "502": {
+            "$ref": "#/components/responses/UpstreamUnreachable"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ]
+      }
+    },
+    "/info/perpsAtOpenInterestCap": {
+      "post": {
+        "tags": [
+          "Perpetuals"
+        ],
+        "summary": "Perps at open interest cap",
+        "operationId": "perpsAtOpenInterestCap",
+        "description": "Returns the list of perpetual assets that are currently at their open interest cap (new positions may be restricted).\n\n**",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "type"
+                ],
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "enum": [
+                      "perpsAtOpenInterestCap"
+                    ]
+                  },
+                  "dex": {
+                    "type": "string",
+                    "description": "Perp dex name. If not specified, uses first perp dex."
+                  }
+                }
+              },
+              "example": {
+                "type": "perpsAtOpenInterestCap"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Array of coin names at OI cap",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  },
+                  "example": [
+                    "BADGER",
+                    "CANTO",
+                    "FTM",
+                    "LOOM",
+                    "PURR"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "502": {
+            "$ref": "#/components/responses/UpstreamUnreachable"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ]
+      }
+    },
+    "/info/validatorL1Votes": {
+      "post": {
+        "tags": [
+          "Staking"
+        ],
+        "summary": "Validator L1 votes",
+        "operationId": "validatorL1Votes",
+        "description": "Returns the L1 validator voting information.\n\n**",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "type"
+                ],
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "enum": [
+                      "validatorL1Votes"
+                    ]
+                  }
+                }
+              },
+              "example": {
+                "type": "validatorL1Votes"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Validator L1 vote data"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "502": {
+            "$ref": "#/components/responses/UpstreamUnreachable"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ]
+      }
+    },
+    "/info/marginTable": {
+      "post": {
+        "tags": [
+          "Perpetuals"
+        ],
+        "summary": "Margin table",
+        "operationId": "marginTable",
+        "description": "Returns the margin tier table configuration used for risk calculations.\n\n**",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "type"
+                ],
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "enum": [
+                      "marginTable"
+                    ]
+                  }
+                }
+              },
+              "example": {
+                "type": "marginTable"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Margin tier table configuration"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "502": {
+            "$ref": "#/components/responses/UpstreamUnreachable"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ]
+      }
+    },
+    "/info/perpDexs": {
+      "post": {
+        "tags": [
+          "Perpetuals"
+        ],
+        "summary": "List perpetual DEXes",
+        "operationId": "perpDexs",
+        "description": "Returns the list of all perpetual DEXes including deployer, oracle updater, fee recipient, and per-asset OI cap / funding multiplier configurations.\n\n**",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "type"
+                ],
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "enum": [
+                      "perpDexs"
+                    ]
+                  }
+                }
+              },
+              "example": {
+                "type": "perpDexs"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Array of perp DEX objects (index 0 may be null for the default DEX)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "nullable": true,
+                    "properties": {
+                      "name": {
+                        "type": "string",
+                        "example": "test"
+                      },
+                      "fullName": {
+                        "type": "string",
+                        "example": "test dex"
+                      },
+                      "deployer": {
+                        "type": "string",
+                        "example": "0x5e89b26d..."
+                      },
+                      "oracleUpdater": {
+                        "type": "string",
+                        "nullable": true
+                      },
+                      "feeRecipient": {
+                        "type": "string",
+                        "nullable": true
+                      },
+                      "assetToStreamingOiCap": {
+                        "type": "array"
+                      },
+                      "assetToFundingMultiplier": {
+                        "type": "array"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "502": {
+            "$ref": "#/components/responses/UpstreamUnreachable"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ]
+      }
+    },
+    "/info/webData2": {
+      "post": {
+        "tags": [
+          "Exchange"
+        ],
+        "summary": "Web data (frontend)",
+        "operationId": "webData2",
+        "description": "Returns aggregated data used by the Hyperliquid web frontend. Includes market summaries, user state, and UI-specific data.\n\n**",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "type",
+                  "user"
+                ],
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "enum": [
+                      "webData2"
+                    ]
+                  },
+                  "user": {
+                    "type": "string",
+                    "description": "42-character hex address",
+                    "example": "0xabc..."
+                  }
+                }
+              },
+              "example": {
+                "type": "webData2",
+                "user": "0xabc..."
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Aggregated web frontend data"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "502": {
+            "$ref": "#/components/responses/UpstreamUnreachable"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ]
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "BearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "description": "Optional. API key passed via `Authorization: Bearer <key>`. Required only when `API_KEY` is configured on the server."
+      }
+    },
+    "responses": {
+      "Unauthorized": {
+        "description": "Invalid or missing API key (only when `API_KEY` is configured on the server)",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            },
+            "example": {
+              "error": "Invalid API key"
+            }
+          }
+        }
+      },
+      "UpstreamUnreachable": {
+        "description": "The upstream Hyperliquid node is unreachable",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            },
+            "example": {
+              "error": "Upstream unreachable: connection refused"
+            }
+          }
+        }
+      }
+    },
+    "schemas": {
+      "ErrorResponse": {
+        "type": "object",
+        "required": [
+          "error"
+        ],
+        "properties": {
+          "error": {
+            "type": "string",
+            "description": "Error message"
+          }
+        }
+      },
+      "AssetContext": {
+        "type": "object",
+        "description": "Asset context aligned with `metaAndAssetCtxs[1][i]` from the Hyperliquid API. Numeric values are strings to preserve precision. Fields are null when no data is available.",
+        "properties": {
+          "funding": {
+            "type": "string",
+            "nullable": true,
+            "description": "Current funding rate",
+            "example": "-0.0000056499"
+          },
+          "openInterest": {
+            "type": "string",
+            "nullable": true,
+            "description": "Open interest (6 decimal places)",
+            "example": "27328.306520"
+          },
+          "prevDayPx": {
+            "type": "string",
+            "nullable": true,
+            "description": "Previous day price",
+            "example": "65633"
+          },
+          "dayNtlVlm": {
+            "type": "string",
+            "nullable": true,
+            "description": "Daily notional volume in USD",
+            "example": "2290705901.9124403"
+          },
+          "premium": {
+            "type": "string",
+            "nullable": true,
+            "description": "Premium rate",
+            "example": "-0.0005538756"
+          },
+          "oraclePx": {
+            "type": "string",
+            "nullable": true,
+            "description": "Oracle price",
+            "example": "66802"
+          },
+          "markPx": {
+            "type": "string",
+            "nullable": true,
+            "description": "Mark price",
+            "example": "66765"
+          },
+          "midPx": {
+            "type": "string",
+            "nullable": true,
+            "description": "Mid price (best bid + best ask / 2)",
+            "example": "66764.5"
+          },
+          "impactPxs": {
+            "type": "array",
+            "nullable": true,
+            "items": {
+              "type": "string"
+            },
+            "description": "Impact prices [bid impact, ask impact]",
+            "example": [
+              "66764",
+              "66765"
+            ]
+          },
+          "dayBaseVlm": {
+            "type": "string",
+            "nullable": true,
+            "description": "Daily base volume",
+            "example": "34250.45488"
+          }
+        }
+      },
+      "AllMids": {
+        "type": "object",
+        "description": "Map of coin symbol to mid price string",
+        "additionalProperties": {
+          "type": "string"
+        },
+        "example": {
+          "BTC": "66764.5",
+          "ETH": "3421.2",
+          "SOL": "150.75"
+        }
+      },
+      "Fill": {
+        "type": "object",
+        "description": "A single fill from the Hyperliquid fullnode",
+        "properties": {
+          "coin": {
+            "type": "string",
+            "description": "Coin symbol",
+            "example": "BTC"
+          },
+          "px": {
+            "type": "string",
+            "description": "Execution price",
+            "example": "65000.5"
+          },
+          "sz": {
+            "type": "string",
+            "description": "Size",
+            "example": "0.1"
+          },
+          "side": {
+            "type": "string",
+            "enum": [
+              "A",
+              "B"
+            ],
+            "description": "A = ask (sell), B = bid (buy)"
+          },
+          "time": {
+            "type": "integer",
+            "description": "Timestamp in milliseconds since epoch",
+            "example": 1700000050000
+          },
+          "startPosition": {
+            "type": "string",
+            "description": "Position before this fill",
+            "example": "0.0"
+          },
+          "dir": {
+            "type": "string",
+            "description": "Direction description",
+            "example": "Open Long"
+          },
+          "closedPnl": {
+            "type": "string",
+            "description": "Closed PnL from this fill",
+            "example": "0.0"
+          },
+          "hash": {
+            "type": "string",
+            "description": "Transaction hash",
+            "example": "0x..."
+          },
+          "oid": {
+            "type": "integer",
+            "description": "Order ID",
+            "example": 12345
+          },
+          "crossed": {
+            "type": "boolean",
+            "description": "Whether the order crossed the spread"
+          },
+          "fee": {
+            "type": "string",
+            "description": "Fee amount",
+            "example": "1.625"
+          },
+          "tid": {
+            "type": "integer",
+            "description": "Trade ID",
+            "example": 67890
+          },
+          "feeToken": {
+            "type": "string",
+            "description": "Fee token symbol",
+            "example": "USDC"
+          }
+        }
+      },
+      "AddressedFill": {
+        "type": "object",
+        "description": "A fill paired with its user address",
+        "properties": {
+          "address": {
+            "type": "string",
+            "description": "Ethereum address of the user",
+            "example": "0xabc123..."
+          },
+          "fill": {
+            "$ref": "#/components/schemas/Fill"
+          }
+        }
+      },
+      "Trade": {
+        "type": "object",
+        "description": "A trade record from the fullnode volumes",
+        "properties": {
+          "coin": {
+            "type": "string",
+            "example": "BTC"
+          },
+          "px": {
+            "type": "string",
+            "description": "Trade price",
+            "example": "65000.5"
+          },
+          "sz": {
+            "type": "string",
+            "description": "Trade size",
+            "example": "0.1"
+          },
+          "time": {
+            "type": "integer",
+            "description": "Timestamp in milliseconds",
+            "example": 1700000050000
+          },
+          "side": {
+            "type": "string",
+            "enum": [
+              "A",
+              "B"
+            ],
+            "description": "A = ask (sell), B = bid (buy)"
+          }
+        }
+      },
+      "L2BookSnapshot": {
+        "type": "object",
+        "description": "L2 order book snapshot for a coin",
+        "properties": {
+          "coin": {
+            "type": "string",
+            "example": "BTC"
+          },
+          "levels": {
+            "type": "array",
+            "description": "Order book levels (may be empty if no snapshot available)",
+            "items": {
+              "type": "object"
+            }
+          },
+          "timestamp": {
+            "type": "integer",
+            "nullable": true,
+            "description": "Snapshot timestamp in milliseconds (null if no data)"
+          }
+        }
+      }
+    }
+  },
+  "security": [
+    {
+      "BearerAuth": []
+    }
+  ]
+}

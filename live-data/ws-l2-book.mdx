@@ -1,0 +1,7 @@
+---
+title: l2Book
+description: L2 order book — snapshot then book deltas for one coin
+openapi-schema: "live-data/openapi-websocket.json L2BookSnapshot"
+---
+
+Subscribe with `{"method":"subscribe","subscription":{"type":"l2Book","coin":"BTC"}}`. Initial book matches **`L2BookSnapshot`**; incremental updates use **`L2BookUpdate`**.
