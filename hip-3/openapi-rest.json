@@ -60,7 +60,7 @@
       "description": "Orders, positions, and active asset data. "
     },
     {
-      "name": "Account",
+      "name": "Hyperliquid Info Endpoint",
       "description": "User account info: fees, rate limits, sub-accounts, agents, roles. "
     },
     {
@@ -119,7 +119,7 @@
     "/info": {
       "post": {
         "tags": [
-          "Account",
+          "Hyperliquid Info Endpoint",
           "Asset Context",
           "Clearinghouse",
           "Exchange",
