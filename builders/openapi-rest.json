@@ -1,0 +1,389 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "HL Indexer API — Builders",
+    "version": "1.0.0",
+    "description": "Builder fee analytics and rankings."
+  },
+  "servers": [
+    {
+      "url": "https://api.hypedexer.com",
+      "description": "EU production"
+    }
+  ],
+  "tags": [
+    {
+      "name": "Builders",
+      "description": "Builder fee analytics and rankings."
+    }
+  ],
+  "paths": {
+    "/builders/top": {
+      "get": {
+        "tags": [
+          "Builders"
+        ],
+        "summary": "Top builders",
+        "description": "Ranked list of builders by volume, fees, fills or users for a given timeframe.",
+        "parameters": [
+          {
+            "name": "timeframe",
+            "in": "query",
+            "description": "Time window",
+            "schema": {
+              "type": "string",
+              "default": "24h",
+              "enum": [
+                "1h",
+                "24h",
+                "7d",
+                "30d"
+              ]
+            }
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "description": "Sort criterion",
+            "schema": {
+              "type": "string",
+              "default": "volume",
+              "enum": [
+                "volume",
+                "fees",
+                "builder_fees",
+                "fills",
+                "users"
+              ]
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 20,
+              "minimum": 1,
+              "maximum": 100
+            }
+          },
+          {
+            "name": "X-API-Key",
+            "in": "header",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "default": true
+                    },
+                    "message": {
+                      "type": "string",
+                      "default": "OK"
+                    },
+                    "data": {
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/builders/stats": {
+      "get": {
+        "tags": [
+          "Builders"
+        ],
+        "summary": "Builder global stats",
+        "description": "Aggregated builder metrics (current, previous period, and variations).",
+        "parameters": [
+          {
+            "name": "timeframe",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "default": "24h",
+              "enum": [
+                "1h",
+                "24h",
+                "7d",
+                "30d"
+              ]
+            }
+          },
+          {
+            "name": "X-API-Key",
+            "in": "header",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "default": true
+                    },
+                    "message": {
+                      "type": "string",
+                      "default": "OK"
+                    },
+                    "data": {
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/builders/stats/all-timeframes": {
+      "get": {
+        "tags": [
+          "Builders"
+        ],
+        "summary": "Builder stats across all timeframes",
+        "description": "Returns builder stats for 1h, 24h, 7d and 30d in a single call.",
+        "parameters": [
+          {
+            "name": "X-API-Key",
+            "in": "header",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "default": true
+                    },
+                    "message": {
+                      "type": "string",
+                      "default": "OK"
+                    },
+                    "data": {
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/builders/{builder_address}/stats": {
+      "get": {
+        "tags": [
+          "Builders"
+        ],
+        "summary": "Builder detail stats",
+        "description": "Per-coin breakdown and period-over-period variations for a specific builder.",
+        "parameters": [
+          {
+            "name": "builder_address",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "timeframe",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "default": "24h",
+              "enum": [
+                "1h",
+                "24h",
+                "7d",
+                "30d"
+              ]
+            }
+          },
+          {
+            "name": "X-API-Key",
+            "in": "header",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "default": true
+                    },
+                    "message": {
+                      "type": "string",
+                      "default": "OK"
+                    },
+                    "data": {
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/builders/{builder_address}/users": {
+      "get": {
+        "tags": [
+          "Builders"
+        ],
+        "summary": "Builder top users",
+        "description": "Top users ranked by builder fees for a specific builder.",
+        "parameters": [
+          {
+            "name": "builder_address",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "timeframe",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "default": "24h",
+              "enum": [
+                "1h",
+                "24h",
+                "7d",
+                "30d"
+              ]
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 20,
+              "minimum": 1,
+              "maximum": 100
+            }
+          },
+          {
+            "name": "X-API-Key",
+            "in": "header",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "default": true
+                    },
+                    "message": {
+                      "type": "string",
+                      "default": "OK"
+                    },
+                    "data": {
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/builders/list": {
+      "get": {
+        "tags": [
+          "Builders"
+        ],
+        "summary": "List all builders",
+        "description": "Returns all known builders with address, name and referrer info.",
+        "parameters": [
+          {
+            "name": "X-API-Key",
+            "in": "header",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "default": true
+                    },
+                    "message": {
+                      "type": "string",
+                      "default": "OK"
+                    },
+                    "data": {
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

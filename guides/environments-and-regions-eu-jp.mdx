@@ -1,14 +1,24 @@
 ---
 title: "Environments & Regions"
-description: "Choose the region closest to your users for best latency. Both regions expose the same paths and parameters."
+description: "A single endpoint with automatic geo-routing for the best latency."
 ---
 
-| Regions | Endpoints                    |
-| ------- | ---------------------------- |
-| Japon   | https://api-jp.hypedexer.com |
-| Europe  | https://api-eu.hypedexer.com |
+## Single endpoint, global routing
 
-> A global load balancer may be added later. For now, pick the nearest region.
+All API requests go through a single endpoint:
+
+```
+https://api.hypedexer.com
+```
+
+A **global load balancer** automatically routes your requests to the nearest infrastructure:
+
+| Your location       | Routed to          |
+| ------------------- | ------------------ |
+| Europe & nearby     | Frankfurt (EU)     |
+| Asia-Pacific & nearby | Tokyo (JP)       |
+
+You don't need to choose a region — the load balancer handles it transparently based on your geographic location. Both regions expose the same paths, parameters, and data.
 
 Need Help ?
 

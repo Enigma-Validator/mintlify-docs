@@ -1,9 +1,9 @@
 {
   "openapi": "3.0.3",
   "info": {
-    "title": "HL Indexer API — HIP-3",
+    "title": "HL Indexer API — EVM",
     "version": "1.0.0",
-    "description": "HIP-3 DEX registry, assets, auctions, OHLCV, oracle stats, fills and analytics."
+    "description": "EVM blockchain data: blocks, transactions, event logs, ledger transfers, bridge events."
   },
   "servers": [
     {
@@ -13,18 +13,18 @@
   ],
   "tags": [
     {
-      "name": "HIP-3",
-      "description": "HIP-3 DEXs, assets, auctions, fills and analytics."
+      "name": "EVM",
+      "description": "EVM blockchain data: blocks, transactions, logs, ledger transfers, bridge events."
     }
   ],
   "paths": {
-    "/hip3/overview": {
+    "/evm/stats": {
       "get": {
         "tags": [
-          "HIP-3"
+          "EVM"
         ],
-        "summary": "HIP-3 overview",
-        "description": "Aggregated HIP-3 statistics.",
+        "summary": "Global EVM indexing stats",
+        "description": "Total blocks, transactions, logs indexed and block range.",
         "parameters": [
           {
             "name": "X-API-Key",
@@ -61,22 +61,23 @@
         }
       }
     },
-    "/hip3/top-movers": {
+    "/evm/stats/daily": {
       "get": {
         "tags": [
-          "HIP-3"
+          "EVM"
         ],
-        "summary": "Top movers",
-        "description": "Top HIP-3 assets by price movement.",
+        "summary": "Daily block/tx stats",
+        "description": "Daily block and transaction counts over a configurable lookback window.",
         "parameters": [
           {
-            "name": "limit",
+            "name": "days",
             "in": "query",
+            "description": "Number of days to look back",
             "schema": {
               "type": "integer",
-              "default": 20,
+              "default": 30,
               "minimum": 1,
-              "maximum": 100
+              "maximum": 365
             }
           },
           {
@@ -114,718 +115,46 @@
         }
       }
     },
-    "/hip3/dexs": {
+    "/evm/blocks": {
       "get": {
         "tags": [
-          "HIP-3"
+          "EVM"
         ],
-        "summary": "List DEXs",
-        "description": "Returns all registered HIP-3 DEXs.",
+        "summary": "List EVM blocks",
+        "description": "Returns EVM blocks with optional filters on block range and time range.",
         "parameters": [
           {
-            "name": "limit",
+            "name": "start_block",
             "in": "query",
-            "schema": {
-              "type": "integer",
-              "default": 100,
-              "minimum": 1,
-              "maximum": 500
-            }
-          },
-          {
-            "name": "offset",
-            "in": "query",
-            "schema": {
-              "type": "integer",
-              "default": 0
-            }
-          },
-          {
-            "name": "X-API-Key",
-            "in": "header",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "success": {
-                      "type": "boolean",
-                      "default": true
-                    },
-                    "message": {
-                      "type": "string",
-                      "default": "OK"
-                    },
-                    "data": {
-                      "type": "object"
-                    }
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/hip3/dexs/{dex_id}": {
-      "get": {
-        "tags": [
-          "HIP-3"
-        ],
-        "summary": "Get DEX by ID",
-        "parameters": [
-          {
-            "name": "dex_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "X-API-Key",
-            "in": "header",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "success": {
-                      "type": "boolean",
-                      "default": true
-                    },
-                    "message": {
-                      "type": "string",
-                      "default": "OK"
-                    },
-                    "data": {
-                      "type": "object"
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "DEX not found"
-          }
-        }
-      }
-    },
-    "/hip3/assets": {
-      "get": {
-        "tags": [
-          "HIP-3"
-        ],
-        "summary": "List assets",
-        "description": "Returns HIP-3 asset configurations. Optionally filter by DEX or search term.",
-        "parameters": [
-          {
-            "name": "dex_id",
-            "in": "query",
-            "description": "Filter by DEX ID",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "search",
-            "in": "query",
-            "description": "Search by ticker or name",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "limit",
-            "in": "query",
-            "schema": {
-              "type": "integer",
-              "default": 200,
-              "minimum": 1,
-              "maximum": 1000
-            }
-          },
-          {
-            "name": "offset",
-            "in": "query",
-            "schema": {
-              "type": "integer",
-              "default": 0
-            }
-          },
-          {
-            "name": "X-API-Key",
-            "in": "header",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "success": {
-                      "type": "boolean",
-                      "default": true
-                    },
-                    "message": {
-                      "type": "string",
-                      "default": "OK"
-                    },
-                    "data": {
-                      "type": "object"
-                    }
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/hip3/assets/{ticker}": {
-      "get": {
-        "tags": [
-          "HIP-3"
-        ],
-        "summary": "Get asset by ticker",
-        "parameters": [
-          {
-            "name": "ticker",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "X-API-Key",
-            "in": "header",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "success": {
-                      "type": "boolean",
-                      "default": true
-                    },
-                    "message": {
-                      "type": "string",
-                      "default": "OK"
-                    },
-                    "data": {
-                      "type": "object"
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Asset not found"
-          }
-        }
-      }
-    },
-    "/hip3/auctions": {
-      "get": {
-        "tags": [
-          "HIP-3"
-        ],
-        "summary": "List auctions",
-        "parameters": [
-          {
-            "name": "status",
-            "in": "query",
-            "description": "Filter by auction status",
-            "schema": {
-              "type": "string",
-              "enum": [
-                "open",
-                "closed",
-                "expired"
-              ]
-            }
-          },
-          {
-            "name": "limit",
-            "in": "query",
-            "schema": {
-              "type": "integer",
-              "default": 50,
-              "minimum": 1,
-              "maximum": 200
-            }
-          },
-          {
-            "name": "offset",
-            "in": "query",
-            "schema": {
-              "type": "integer",
-              "default": 0
-            }
-          },
-          {
-            "name": "X-API-Key",
-            "in": "header",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "success": {
-                      "type": "boolean",
-                      "default": true
-                    },
-                    "message": {
-                      "type": "string",
-                      "default": "OK"
-                    },
-                    "data": {
-                      "type": "object"
-                    }
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/hip3/auctions/current": {
-      "get": {
-        "tags": [
-          "HIP-3"
-        ],
-        "summary": "Current auction",
-        "description": "Returns the currently active auction, or null if none.",
-        "parameters": [
-          {
-            "name": "X-API-Key",
-            "in": "header",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "success": {
-                      "type": "boolean",
-                      "default": true
-                    },
-                    "message": {
-                      "type": "string",
-                      "default": "OK"
-                    },
-                    "data": {
-                      "type": "object"
-                    }
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/hip3/auctions/history": {
-      "get": {
-        "tags": [
-          "HIP-3"
-        ],
-        "summary": "Auction history",
-        "parameters": [
-          {
-            "name": "dex_id",
-            "in": "query",
-            "description": "Filter by DEX ID",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "limit",
-            "in": "query",
-            "schema": {
-              "type": "integer",
-              "default": 100,
-              "minimum": 1,
-              "maximum": 500
-            }
-          },
-          {
-            "name": "offset",
-            "in": "query",
-            "schema": {
-              "type": "integer",
-              "default": 0
-            }
-          },
-          {
-            "name": "X-API-Key",
-            "in": "header",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "success": {
-                      "type": "boolean",
-                      "default": true
-                    },
-                    "message": {
-                      "type": "string",
-                      "default": "OK"
-                    },
-                    "data": {
-                      "type": "object"
-                    }
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/hip3/snapshots": {
-      "get": {
-        "tags": [
-          "HIP-3"
-        ],
-        "summary": "Live snapshots",
-        "description": "Latest price/volume snapshots for HIP-3 assets.",
-        "parameters": [
-          {
-            "name": "dex_id",
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "coin",
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "X-API-Key",
-            "in": "header",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "success": {
-                      "type": "boolean",
-                      "default": true
-                    },
-                    "message": {
-                      "type": "string",
-                      "default": "OK"
-                    },
-                    "data": {
-                      "type": "object"
-                    }
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/hip3/ohlcv": {
-      "get": {
-        "tags": [
-          "HIP-3"
-        ],
-        "summary": "OHLCV bars",
-        "description": "OHLCV candlestick data for a HIP-3 asset.",
-        "parameters": [
-          {
-            "name": "coin",
-            "in": "query",
-            "required": true,
-            "description": "Coin ticker",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "dex_id",
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "start",
-            "in": "query",
-            "schema": {
-              "type": "string",
-              "format": "date-time"
-            }
-          },
-          {
-            "name": "end",
-            "in": "query",
-            "schema": {
-              "type": "string",
-              "format": "date-time"
-            }
-          },
-          {
-            "name": "limit",
-            "in": "query",
-            "schema": {
-              "type": "integer",
-              "default": 168,
-              "minimum": 1,
-              "maximum": 2000
-            }
-          },
-          {
-            "name": "X-API-Key",
-            "in": "header",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "success": {
-                      "type": "boolean",
-                      "default": true
-                    },
-                    "message": {
-                      "type": "string",
-                      "default": "OK"
-                    },
-                    "data": {
-                      "type": "object"
-                    }
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/hip3/oracle/stats": {
-      "get": {
-        "tags": [
-          "HIP-3"
-        ],
-        "summary": "Oracle stats (1m granularity)",
-        "description": "1-minute oracle price statistics for a DEX.",
-        "parameters": [
-          {
-            "name": "dex_id",
-            "in": "query",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "asset_id",
-            "in": "query",
+            "description": "Min block number",
             "schema": {
               "type": "integer"
             }
           },
           {
-            "name": "start",
+            "name": "end_block",
             "in": "query",
+            "description": "Max block number",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "start_time",
+            "in": "query",
+            "description": "Start time (UTC)",
             "schema": {
               "type": "string",
               "format": "date-time"
             }
           },
           {
-            "name": "end",
+            "name": "end_time",
             "in": "query",
+            "description": "End time (UTC)",
             "schema": {
               "type": "string",
               "format": "date-time"
-            }
-          },
-          {
-            "name": "limit",
-            "in": "query",
-            "schema": {
-              "type": "integer",
-              "default": 1440,
-              "minimum": 1,
-              "maximum": 10000
-            }
-          },
-          {
-            "name": "X-API-Key",
-            "in": "header",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "success": {
-                      "type": "boolean",
-                      "default": true
-                    },
-                    "message": {
-                      "type": "string",
-                      "default": "OK"
-                    },
-                    "data": {
-                      "type": "object"
-                    }
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/hip3/fills": {
-      "get": {
-        "tags": [
-          "HIP-3"
-        ],
-        "summary": "HIP-3 fills",
-        "description": "Fills on HIP-3 markets.",
-        "parameters": [
-          {
-            "name": "dex_id",
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "coin",
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "user",
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "side",
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "start",
-            "in": "query",
-            "schema": {
-              "type": "string",
-              "format": "date-time"
-            }
-          },
-          {
-            "name": "end",
-            "in": "query",
-            "schema": {
-              "type": "string",
-              "format": "date-time"
-            }
-          },
-          {
-            "name": "min_notional",
-            "in": "query",
-            "description": "Minimum notional in USD",
-            "schema": {
-              "type": "number"
             }
           },
           {
@@ -881,26 +210,110 @@
         }
       }
     },
-    "/hip3/stats/traders": {
+    "/evm/blocks/{block_number}": {
       "get": {
         "tags": [
-          "HIP-3"
+          "EVM"
         ],
-        "summary": "Trader stats",
-        "description": "Aggregated trader statistics on HIP-3 markets.",
+        "summary": "Get block by number",
+        "description": "Returns a single EVM block by its block number.",
         "parameters": [
           {
-            "name": "dex_id",
+            "name": "block_number",
+            "in": "path",
+            "required": true,
+            "description": "Block number",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "X-API-Key",
+            "in": "header",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "default": true
+                    },
+                    "message": {
+                      "type": "string",
+                      "default": "OK"
+                    },
+                    "data": {
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Block not found"
+          }
+        }
+      }
+    },
+    "/evm/transactions": {
+      "get": {
+        "tags": [
+          "EVM"
+        ],
+        "summary": "List EVM transactions",
+        "description": "Returns EVM transactions with optional filters.",
+        "parameters": [
+          {
+            "name": "block_number",
             "in": "query",
+            "description": "Filter by block number",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "to_addr",
+            "in": "query",
+            "description": "Filter by to address",
             "schema": {
               "type": "string"
             }
           },
           {
-            "name": "coin",
+            "name": "start_time",
             "in": "query",
+            "description": "Start time (UTC)",
             "schema": {
-              "type": "string"
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "end_time",
+            "in": "query",
+            "description": "End time (UTC)",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "include_system",
+            "in": "query",
+            "description": "Include system transactions",
+            "schema": {
+              "type": "boolean",
+              "default": true
             }
           },
           {
@@ -910,7 +323,7 @@
               "type": "integer",
               "default": 100,
               "minimum": 1,
-              "maximum": 500
+              "maximum": 1000
             }
           },
           {
@@ -956,170 +369,215 @@
         }
       }
     },
-    "/hip3/leaderboard": {
+    "/evm/blocks/{block_number}/transactions": {
       "get": {
         "tags": [
-          "HIP-3"
+          "EVM"
         ],
-        "summary": "HIP-3 leaderboard",
+        "summary": "Transactions in a specific block",
+        "description": "Returns all transactions in a given block.",
         "parameters": [
           {
-            "name": "by",
+            "name": "block_number",
+            "in": "path",
+            "required": true,
+            "description": "Block number",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "X-API-Key",
+            "in": "header",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "default": true
+                    },
+                    "message": {
+                      "type": "string",
+                      "default": "OK"
+                    },
+                    "data": {
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/evm/logs": {
+      "get": {
+        "tags": [
+          "EVM"
+        ],
+        "summary": "List EVM event logs",
+        "description": "Returns EVM event logs with optional filters on block, contract address, and event signature.",
+        "parameters": [
+          {
+            "name": "block_number",
             "in": "query",
-            "description": "Ranking criterion",
+            "description": "Filter by block number",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "address",
+            "in": "query",
+            "description": "Filter by contract address",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "topic0",
+            "in": "query",
+            "description": "Filter by event signature (topic0)",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "start_time",
+            "in": "query",
+            "description": "Start time (UTC)",
             "schema": {
               "type": "string",
-              "default": "volume",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "end_time",
+            "in": "query",
+            "description": "End time (UTC)",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 100,
+              "minimum": 1,
+              "maximum": 1000
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 0
+            }
+          },
+          {
+            "name": "X-API-Key",
+            "in": "header",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "default": true
+                    },
+                    "message": {
+                      "type": "string",
+                      "default": "OK"
+                    },
+                    "data": {
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/evm/ledger/transfers": {
+      "get": {
+        "tags": [
+          "EVM"
+        ],
+        "summary": "List ledger transfers (L1 actions)",
+        "description": "L1 ledger transfers including withdraw3, usdSend, spotSend, sendAsset, usdClassTransfer, subAccountTransfer, vaultTransfer.",
+        "parameters": [
+          {
+            "name": "user",
+            "in": "query",
+            "description": "Filter by user address (from or to)",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "action_type",
+            "in": "query",
+            "description": "Filter by action type",
+            "schema": {
+              "type": "string",
               "enum": [
-                "volume",
-                "pnl",
-                "trades",
-                "fees"
+                "withdraw3",
+                "usdSend",
+                "spotSend",
+                "sendAsset",
+                "usdClassTransfer",
+                "subAccountTransfer",
+                "vaultTransfer"
               ]
             }
           },
           {
-            "name": "dex_id",
+            "name": "token",
             "in": "query",
+            "description": "Filter by token (partial match)",
             "schema": {
               "type": "string"
             }
           },
           {
-            "name": "limit",
+            "name": "start_time",
             "in": "query",
-            "schema": {
-              "type": "integer",
-              "default": 50,
-              "minimum": 1,
-              "maximum": 200
-            }
-          },
-          {
-            "name": "X-API-Key",
-            "in": "header",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "success": {
-                      "type": "boolean",
-                      "default": true
-                    },
-                    "message": {
-                      "type": "string",
-                      "default": "OK"
-                    },
-                    "data": {
-                      "type": "object"
-                    }
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/hip3/users/{address}/overview": {
-      "get": {
-        "tags": [
-          "HIP-3"
-        ],
-        "summary": "User HIP-3 overview",
-        "parameters": [
-          {
-            "name": "address",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "X-API-Key",
-            "in": "header",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "success": {
-                      "type": "boolean",
-                      "default": true
-                    },
-                    "message": {
-                      "type": "string",
-                      "default": "OK"
-                    },
-                    "data": {
-                      "type": "object"
-                    }
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/hip3/users/{address}/fills": {
-      "get": {
-        "tags": [
-          "HIP-3"
-        ],
-        "summary": "User HIP-3 fills",
-        "parameters": [
-          {
-            "name": "address",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "coin",
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "dex_id",
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "start",
-            "in": "query",
+            "description": "Start time (UTC)",
             "schema": {
               "type": "string",
               "format": "date-time"
             }
           },
           {
-            "name": "end",
+            "name": "end_time",
             "in": "query",
+            "description": "End time (UTC)",
             "schema": {
               "type": "string",
               "format": "date-time"
@@ -1178,19 +636,52 @@
         }
       }
     },
-    "/hip3/users/{address}/coins": {
+    "/evm/bridge/events": {
       "get": {
         "tags": [
-          "HIP-3"
+          "EVM"
         ],
-        "summary": "User HIP-3 coin stats",
+        "summary": "List bridge events (deposits/withdrawals)",
+        "description": "Bridge deposit votes, withdrawal finalizations, and signature events.",
         "parameters": [
           {
-            "name": "address",
-            "in": "path",
-            "required": true,
+            "name": "user_addr",
+            "in": "query",
+            "description": "Filter by user address",
             "schema": {
               "type": "string"
+            }
+          },
+          {
+            "name": "event_type",
+            "in": "query",
+            "description": "Filter by event type",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "deposit_vote",
+                "withdrawal_finalized",
+                "withdrawal_sign",
+                "withdraw3"
+              ]
+            }
+          },
+          {
+            "name": "start_time",
+            "in": "query",
+            "description": "Start time (UTC)",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "end_time",
+            "in": "query",
+            "description": "End time (UTC)",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
             }
           },
           {
@@ -1198,9 +689,181 @@
             "in": "query",
             "schema": {
               "type": "integer",
-              "default": 20,
+              "default": 100,
               "minimum": 1,
-              "maximum": 100
+              "maximum": 1000
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 0
+            }
+          },
+          {
+            "name": "X-API-Key",
+            "in": "header",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "default": true
+                    },
+                    "message": {
+                      "type": "string",
+                      "default": "OK"
+                    },
+                    "data": {
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/evm/user/{address}/ledger-events": {
+      "get": {
+        "tags": [
+          "EVM"
+        ],
+        "summary": "Non-funding ledger events for a user",
+        "description": "Unified non-funding ledger history for a user. Combines ledger_transfers (usdSend, spotSend, sendAsset, withdraw3, usdClassTransfer, subAccountTransfer, vaultTransfer) and evm_bridge_events (deposit_vote, withdrawal_finalized).\n\nEvent types:\n- `deposit` — bridge deposit into Hyperliquid\n- `withdrawal` — withdraw3 or bridge withdrawal finalized\n- `transfer_in` — received via usdSend/spotSend/sendAsset\n- `transfer_out` — sent via usdSend/spotSend/sendAsset\n- `class_transfer` — perp ↔ spot USDC transfer\n- `sub_account` — sub-account transfer\n- `vault` — vault deposit/withdrawal",
+        "parameters": [
+          {
+            "name": "address",
+            "in": "path",
+            "required": true,
+            "description": "User address (0x…)",
+            "schema": {
+              "type": "string",
+              "pattern": "^0x[0-9a-fA-F]{40}$"
+            }
+          },
+          {
+            "name": "event_type",
+            "in": "query",
+            "description": "Filter by event type(s) (repeat param for multiple)",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "enum": [
+                  "deposit",
+                  "withdrawal",
+                  "transfer_in",
+                  "transfer_out",
+                  "class_transfer",
+                  "sub_account",
+                  "vault"
+                ]
+              }
+            },
+            "style": "form",
+            "explode": true
+          },
+          {
+            "name": "start_time",
+            "in": "query",
+            "description": "Start time (UTC)",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "end_time",
+            "in": "query",
+            "description": "End time (UTC)",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 100,
+              "minimum": 1,
+              "maximum": 1000
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 0
+            }
+          },
+          {
+            "name": "X-API-Key",
+            "in": "header",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "default": true
+                    },
+                    "message": {
+                      "type": "string",
+                      "default": "OK"
+                    },
+                    "data": {
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/evm/user/{address}/ledger-summary": {
+      "get": {
+        "tags": [
+          "EVM"
+        ],
+        "summary": "Aggregated ledger summary per action type for a user",
+        "description": "Count and total amount per action type across all ledger transfers involving this user.",
+        "parameters": [
+          {
+            "name": "address",
+            "in": "path",
+            "required": true,
+            "description": "User address (0x…)",
+            "schema": {
+              "type": "string",
+              "pattern": "^0x[0-9a-fA-F]{40}$"
             }
           },
           {

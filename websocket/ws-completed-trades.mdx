@@ -8,7 +8,7 @@ description: Subscribe to completed trades streams over the /ws multiplex WebSoc
 The completed trades stream uses the **multiplex WebSocket endpoint**:
 
 ```text
-wss://api-eu.hypedexer.com/ws
+wss://api.hypedexer.com/ws
 ```
 
 All subscriptions go through `/ws`.  
@@ -149,7 +149,7 @@ Example confirmation:
 
 ```bash
 wscat -H "X-API-Key: <your_api_key>" \
-  -c wss://api-eu.hypedexer.com/ws
+  -c wss://api.hypedexer.com/ws
 
 # then paste:
 # {"method":"subscribe","subscription":{"type":"completed_trades"}}
@@ -159,7 +159,7 @@ wscat -H "X-API-Key: <your_api_key>" \
 
 ```bash
 wscat -H "X-API-Key: <your_api_key>" \
-  -c wss://api-eu.hypedexer.com/ws
+  -c wss://api.hypedexer.com/ws
 
 # then paste:
 # {"method":"subscribe","subscription":{"type":"completed_trades","user":"0x8fcc8f55d7a8cdaee770a9e4112725d4a2c60492"}}

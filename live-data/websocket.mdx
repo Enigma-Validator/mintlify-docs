@@ -3,4 +3,34 @@ title: WebSocket overview
 description: Hypedexer WebSocket — connection and protocol
 ---
 
-The **Live Data WebSocket API** group in the sidebar documents `GET /ws` on `wss://api.hypedexer.com` and the JSON **components/schemas** (client messages, server messages, fills, books, etc.).
+The **Live Data WebSocket API** provides real-time streaming via `GET /ws` on `wss://api.hypedexer.com`. The sidebar documents all available subscriptions and their schemas.
+
+## Connection
+
+```
+wss://api.hypedexer.com/ws?mode=mirror
+```
+
+<Warning>
+  The `?mode=mirror` query parameter is **required** for live data WebSocket connections. Connections without this parameter will not work.
+</Warning>
+
+## Important: live data subscriptions only
+
+A live data WebSocket connection (`?mode=mirror`) exclusively supports the subscriptions documented in this section: `userFills`, `allFills`, `allMids`, `trades`, `l2Book`, `l4Book`, `l4BookUpdates`.
+
+<Warning>
+  You can **only** subscribe to live data events on this connection. If you need to subscribe to other event types (e.g. historical or indexed data WebSockets), use a separate connection on `wss://api.hypedexer.com/ws` **without** the `?mode=mirror` parameter.
+</Warning>
+
+## Protocol
+
+All messages are JSON. The client sends **subscribe**, **unsubscribe**, and **pong** messages. The server sends acknowledgements, snapshots, and real-time updates.
+
+```json
+// Subscribe to a live event
+{"method": "subscribe", "subscription": {"type": "allFills"}}
+
+// Unsubscribe
+{"method": "unsubscribe", "subscription": {"type": "allFills"}}
+```

@@ -1,0 +1,1452 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "HL Indexer API",
+    "version": "1.0.0",
+    "description": "API to query indexed Hyperliquid trading data.\n\nThis API provides access to stored/indexed trading data:\n- **Fills**: Executed orders and fills (Spot-only or All = Spot + Perp)\n- **Analytics**: Aggregations and statistics based on indexed data\n- **Completed Trades**: Trade objects and their related fills\n- **Users**: User overviews, performance and activity\n- **Builders**: Builder fee analytics and rankings\n- **Funding**: Funding rate history, user funding payments, predicted rates\n- **HIP-3**: DEX registry, assets, auctions, OHLCV, oracle stats, fills\n- **Liquidations**: Liquidation events with filters\n- **Overview**: Market dashboard metrics (volume, fees, traders, PnL)\n- **Spot**: Spot token metadata, pairs, and auctions\n- **TWAPs**: TWAP orders, execution stats and fills\n- **Vaults**: Vault details, summaries, equity, ledger\n- **EVM**: Blocks, transactions, event logs, ledger transfers, bridge events\n\n> Note: No live streaming. Responses are computed from indexed data."
+  },
+  "servers": [
+    { "url": "https://api.hypedexer.com", "description": "EU production" }
+  ],
+  "tags": [
+    { "name": "Fills", "description": "Fills endpoints." },
+    { "name": "Analytics", "description": "Aggregations and stats." },
+    { "name": "Completed Trades", "description": "Trades and fills." },
+    { "name": "Users", "description": "User profiles." },
+    { "name": "Builders", "description": "Builder fee analytics and rankings." },
+    { "name": "Funding", "description": "Funding rates and payments (HL-compatible)." },
+    { "name": "HIP-3", "description": "HIP-3 DEXs, assets, auctions, fills and analytics." },
+    { "name": "Liquidations", "description": "Liquidation events." },
+    { "name": "Overview", "description": "Market dashboard metrics." },
+    { "name": "Spot", "description": "Spot token metadata, pairs and auctions." },
+    { "name": "TWAPs", "description": "TWAP orders, stats and fills." },
+    { "name": "Vaults", "description": "Vault details, summaries, equity and ledger." },
+    { "name": "EVM", "description": "EVM blockchain data: blocks, transactions, logs, ledger transfers, bridge events." }
+  ],
+  "paths": {
+    "/fills/": {
+      "get": {
+        "tags": ["Fills"],
+        "summary": "List fills (All = Spot + Perp)",
+        "description": "Returns fills across Spot and Perp.",
+        "parameters": [
+          { "name": "user", "in": "query", "description": "User address", "schema": { "type": "string" } },
+          { "name": "coin", "in": "query", "description": "Coin symbol", "schema": { "type": "string" } },
+          { "name": "side", "in": "query", "description": "Side (B=Buy, A=Sell)", "schema": { "type": "string", "enum": ["B", "A"] } },
+          { "name": "size_usd", "in": "query", "description": "Minimum notional amount in USD", "schema": { "type": "number" } },
+          { "name": "start_time", "in": "query", "description": "ISO 8601 UTC start time", "schema": { "type": "string", "format": "date-time" } },
+          { "name": "end_time", "in": "query", "description": "ISO 8601 UTC end time", "schema": { "type": "string", "format": "date-time" } },
+          { "name": "limit", "in": "query", "description": "Max items to return", "schema": { "type": "integer", "default": 100 } },
+          { "name": "cursor", "in": "query", "description": "Pagination cursor (format: `<time_ms>:<tid>`)", "schema": { "type": "string" } },
+          { "name": "order", "in": "query", "description": "Sort order", "schema": { "type": "string", "default": "DESC", "enum": ["ASC", "DESC"] } },
+          { "name": "X-API-Key", "in": "header", "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": { "type": "object", "properties": { "success": { "type": "boolean", "default": true }, "message": { "type": "string", "default": "OK" }, "data": { "type": "object" } } }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/fills/recent": {
+      "get": {
+        "tags": ["Fills"],
+        "summary": "Get Fills Recent",
+        "description": "Recent fills (live table, 24h TTL) — same filters as `/fills`, faster responses for the recent time window.",
+        "operationId": "get_fills_recent",
+        "parameters": [
+          { "name": "user", "in": "query", "description": "User address", "schema": { "type": "string" } },
+          { "name": "coin", "in": "query", "description": "Coin symbol", "schema": { "type": "string" } },
+          { "name": "side", "in": "query", "description": "Side (B=Buy, A=Sell)", "schema": { "type": "string", "enum": ["B", "A"] } },
+          { "name": "size_usd", "in": "query", "description": "Minimum notional amount in USD", "schema": { "type": "number" } },
+          { "name": "start_time", "in": "query", "schema": { "type": "string", "format": "date-time" } },
+          { "name": "end_time", "in": "query", "schema": { "type": "string", "format": "date-time" } },
+          { "name": "limit", "in": "query", "schema": { "type": "integer", "default": 100 } },
+          { "name": "cursor", "in": "query", "schema": { "type": "string" } },
+          { "name": "order", "in": "query", "schema": { "type": "string", "default": "DESC", "enum": ["ASC", "DESC"] } },
+          { "name": "X-API-Key", "in": "header", "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": { "type": "object", "properties": { "success": { "type": "boolean", "default": true }, "message": { "type": "string", "default": "OK" }, "data": { "type": "object" } } }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/fills/user/{user_address}": {
+      "get": {
+        "tags": ["Fills"],
+        "summary": "User fills (All = Spot + Perp)",
+        "parameters": [
+          { "name": "user_address", "in": "path", "required": true, "schema": { "type": "string", "pattern": "^0x[0-9a-fA-F]{40}$" } },
+          { "name": "time_range", "in": "query", "description": "Preset time range", "schema": { "type": "string", "enum": ["1h", "24h", "7d", "30d"] } },
+          { "name": "coin", "in": "query", "schema": { "type": "string" } },
+          { "name": "start_time", "in": "query", "schema": { "type": "string", "format": "date-time" } },
+          { "name": "end_time", "in": "query", "schema": { "type": "string", "format": "date-time" } },
+          { "name": "limit", "in": "query", "schema": { "type": "integer", "default": 100 } },
+          { "name": "cursor", "in": "query", "schema": { "type": "string" } },
+          { "name": "order", "in": "query", "schema": { "type": "string", "default": "DESC", "enum": ["ASC", "DESC"] } },
+          { "name": "X-API-Key", "in": "header", "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": { "type": "object", "properties": { "success": { "type": "boolean", "default": true }, "message": { "type": "string", "default": "OK" }, "data": { "type": "object" } } }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/fills/count": {
+      "get": {
+        "tags": ["Fills"],
+        "summary": "Count fills",
+        "parameters": [
+          { "name": "start_time", "in": "query", "schema": { "type": "string", "format": "date-time" } },
+          { "name": "end_time", "in": "query", "schema": { "type": "string", "format": "date-time" } },
+          { "name": "coin", "in": "query", "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": { "type": "object", "properties": { "success": { "type": "boolean", "default": true }, "message": { "type": "string", "default": "OK" }, "data": { "type": "object" } } }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/fills/spot/": {
+      "get": {
+        "tags": ["Fills"],
+        "summary": "List Spot fills only",
+        "parameters": [
+          { "name": "user", "in": "query", "schema": { "type": "string" } },
+          { "name": "coin", "in": "query", "description": "Single coin filter", "schema": { "type": "string" } },
+          { "name": "coins", "in": "query", "description": "Multiple coins filter (repeat param)", "schema": { "type": "array", "items": { "type": "string" } }, "style": "form", "explode": true },
+          { "name": "side", "in": "query", "schema": { "type": "string", "enum": ["B", "A"] } },
+          { "name": "start_time", "in": "query", "schema": { "type": "string", "format": "date-time" } },
+          { "name": "end_time", "in": "query", "schema": { "type": "string", "format": "date-time" } },
+          { "name": "limit", "in": "query", "schema": { "type": "integer", "default": 100 } },
+          { "name": "order", "in": "query", "schema": { "type": "string", "default": "DESC", "enum": ["ASC", "DESC"] } },
+          { "name": "X-API-Key", "in": "header", "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": { "type": "object", "properties": { "success": { "type": "boolean", "default": true }, "message": { "type": "string", "default": "OK" }, "data": { "type": "object" } } }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/fills/spot/user/{user_address}": {
+      "get": {
+        "tags": ["Fills"],
+        "summary": "User Spot fills only",
+        "parameters": [
+          { "name": "user_address", "in": "path", "required": true, "schema": { "type": "string", "pattern": "^0x[0-9a-fA-F]{40}$" } },
+          { "name": "coin", "in": "query", "schema": { "type": "string" } },
+          { "name": "coins", "in": "query", "description": "Multiple coins filter", "schema": { "type": "array", "items": { "type": "string" } }, "style": "form", "explode": true },
+          { "name": "start_time", "in": "query", "schema": { "type": "string", "format": "date-time" } },
+          { "name": "end_time", "in": "query", "schema": { "type": "string", "format": "date-time" } },
+          { "name": "limit", "in": "query", "schema": { "type": "integer", "default": 100 } },
+          { "name": "offset", "in": "query", "schema": { "type": "integer", "default": 0 } },
+          { "name": "order", "in": "query", "schema": { "type": "string", "default": "DESC", "enum": ["ASC", "DESC"] } },
+          { "name": "X-API-Key", "in": "header", "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": { "type": "object", "properties": { "success": { "type": "boolean", "default": true }, "message": { "type": "string", "default": "OK" }, "data": { "type": "object" } } }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/analytics/fills/stats": {
+      "get": {
+        "tags": ["Analytics"],
+        "summary": "Fills statistics",
+        "description": "Aggregated stats derived from indexed fills.",
+        "parameters": [
+          { "name": "start_time", "in": "query", "schema": { "type": "string", "format": "date-time" } },
+          { "name": "end_time", "in": "query", "schema": { "type": "string", "format": "date-time" } },
+          { "name": "coin", "in": "query", "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": { "type": "object", "properties": { "success": { "type": "boolean", "default": true }, "message": { "type": "string", "default": "OK" }, "data": { "type": "object" } } }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/analytics/liquidations/stats": {
+      "get": {
+        "tags": ["Analytics"],
+        "summary": "Get Liquidations Stats",
+        "description": "Liquidation statistics for the last `days` days window.",
+        "parameters": [
+          { "name": "days", "in": "query", "schema": { "type": "integer", "default": 1 } },
+          { "name": "X-API-Key", "in": "header", "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": { "type": "object", "properties": { "success": { "type": "boolean", "default": true }, "message": { "type": "string", "default": "OK" }, "data": { "type": "object" } } }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/completed-trades/": {
+      "get": {
+        "tags": ["Completed Trades"],
+        "summary": "List completed trades",
+        "description": "Returns completed trades. Defaults to a 24h window if no time filters are provided.",
+        "parameters": [
+          { "name": "user", "in": "query", "description": "User address", "schema": { "type": "string" } },
+          { "name": "coin", "in": "query", "schema": { "type": "string" } },
+          { "name": "direction", "in": "query", "description": "Trade direction", "schema": { "type": "string", "enum": ["long", "short"] } },
+          { "name": "start_time", "in": "query", "schema": { "type": "string", "format": "date-time" } },
+          { "name": "end_time", "in": "query", "schema": { "type": "string", "format": "date-time" } },
+          { "name": "min_pnl", "in": "query", "description": "Minimum PnL filter", "schema": { "type": "number" } },
+          { "name": "max_pnl", "in": "query", "description": "Maximum PnL filter", "schema": { "type": "number" } },
+          { "name": "limit", "in": "query", "schema": { "type": "integer", "default": 100 } },
+          { "name": "offset", "in": "query", "schema": { "type": "integer", "default": 0 } },
+          { "name": "sort_by", "in": "query", "description": "Sort field", "schema": { "type": "string", "default": "end_time" } },
+          { "name": "sort_dir", "in": "query", "schema": { "type": "string", "default": "DESC", "enum": ["ASC", "DESC"] } },
+          { "name": "X-API-Key", "in": "header", "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": { "type": "object", "properties": { "success": { "type": "boolean", "default": true }, "message": { "type": "string", "default": "OK" }, "data": { "type": "object" } } }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/completed-trades/summary": {
+      "get": {
+        "tags": ["Completed Trades"],
+        "summary": "Completed trades summary",
+        "parameters": [
+          { "name": "user", "in": "query", "schema": { "type": "string" } },
+          { "name": "coin", "in": "query", "schema": { "type": "string" } },
+          { "name": "direction", "in": "query", "schema": { "type": "string", "enum": ["long", "short"] } },
+          { "name": "start_time", "in": "query", "schema": { "type": "string", "format": "date-time" } },
+          { "name": "end_time", "in": "query", "schema": { "type": "string", "format": "date-time" } },
+          { "name": "X-API-Key", "in": "header", "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": { "type": "object", "properties": { "success": { "type": "boolean", "default": true }, "message": { "type": "string", "default": "OK" }, "data": { "type": "object" } } }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/completed-trades/{trade_id}/fills": {
+      "get": {
+        "tags": ["Completed Trades"],
+        "summary": "Fills for a completed trade",
+        "parameters": [
+          { "name": "trade_id", "in": "path", "required": true, "schema": { "type": "string" } },
+          { "name": "X-API-Key", "in": "header", "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": { "type": "object", "properties": { "success": { "type": "boolean", "default": true }, "message": { "type": "string", "default": "OK" }, "data": { "type": "object" } } }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/users/{user}/overview": {
+      "get": {
+        "tags": ["Users"],
+        "summary": "User overview",
+        "parameters": [
+          { "name": "user", "in": "path", "required": true, "schema": { "type": "string" } },
+          { "name": "start_time", "in": "query", "schema": { "type": "string", "format": "date-time" } },
+          { "name": "end_time", "in": "query", "schema": { "type": "string", "format": "date-time" } },
+          { "name": "X-API-Key", "in": "header", "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": { "type": "object", "properties": { "success": { "type": "boolean", "default": true }, "message": { "type": "string", "default": "OK" }, "data": { "type": "object" } } }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/users/{user}/performance": {
+      "get": {
+        "tags": ["Users"],
+        "summary": "User performance",
+        "parameters": [
+          { "name": "user", "in": "path", "required": true, "schema": { "type": "string" } },
+          { "name": "start_time", "in": "query", "schema": { "type": "string", "format": "date-time" } },
+          { "name": "end_time", "in": "query", "schema": { "type": "string", "format": "date-time" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": { "type": "object", "properties": { "success": { "type": "boolean", "default": true }, "message": { "type": "string", "default": "OK" }, "data": { "type": "object" } } }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/users/{user}/coins": {
+      "get": {
+        "tags": ["Users"],
+        "summary": "User coins",
+        "parameters": [
+          { "name": "user", "in": "path", "required": true, "schema": { "type": "string" } },
+          { "name": "start_time", "in": "query", "schema": { "type": "string", "format": "date-time" } },
+          { "name": "end_time", "in": "query", "schema": { "type": "string", "format": "date-time" } },
+          { "name": "limit", "in": "query", "schema": { "type": "integer", "default": 20, "minimum": 1, "maximum": 100 } }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": { "type": "object", "properties": { "success": { "type": "boolean", "default": true }, "message": { "type": "string", "default": "OK" }, "data": { "type": "object" } } }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/users/leaderboard": {
+      "get": {
+        "tags": ["Users"],
+        "summary": "Leaderboard",
+        "parameters": [
+          { "name": "by", "in": "query", "description": "Ranking criterion", "schema": { "type": "string", "default": "volume", "enum": ["volume", "pnl", "trades"] } },
+          { "name": "hours", "in": "query", "description": "Lookback window in hours", "schema": { "type": "integer", "default": 24, "minimum": 1, "maximum": 168 } },
+          { "name": "limit", "in": "query", "schema": { "type": "integer", "default": 20, "minimum": 1, "maximum": 100 } }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": { "type": "object", "properties": { "success": { "type": "boolean", "default": true }, "message": { "type": "string", "default": "OK" }, "data": { "type": "object" } } }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/users/active": {
+      "get": {
+        "tags": ["Users"],
+        "summary": "Active users",
+        "parameters": [
+          { "name": "hours", "in": "query", "schema": { "type": "integer", "default": 24, "minimum": 1, "maximum": 168 } },
+          { "name": "limit", "in": "query", "schema": { "type": "integer", "default": 20, "minimum": 1, "maximum": 100 } }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": { "type": "object", "properties": { "success": { "type": "boolean", "default": true }, "message": { "type": "string", "default": "OK" }, "data": { "type": "object" } } }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/builders/top": {
+      "get": {
+        "tags": ["Builders"],
+        "summary": "Top builders",
+        "description": "Ranked list of builders by volume, fees, fills or users for a given timeframe.",
+        "parameters": [
+          { "name": "timeframe", "in": "query", "description": "Time window", "schema": { "type": "string", "default": "24h", "enum": ["1h", "24h", "7d", "30d"] } },
+          { "name": "sort", "in": "query", "description": "Sort criterion", "schema": { "type": "string", "default": "volume", "enum": ["volume", "fees", "builder_fees", "fills", "users"] } },
+          { "name": "limit", "in": "query", "schema": { "type": "integer", "default": 20, "minimum": 1, "maximum": 100 } },
+          { "name": "X-API-Key", "in": "header", "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": { "application/json": { "schema": { "type": "object", "properties": { "success": { "type": "boolean", "default": true }, "message": { "type": "string", "default": "OK" }, "data": { "type": "object" } } } } }
+          }
+        }
+      }
+    },
+    "/builders/stats": {
+      "get": {
+        "tags": ["Builders"],
+        "summary": "Builder global stats",
+        "description": "Aggregated builder metrics (current, previous period, and variations).",
+        "parameters": [
+          { "name": "timeframe", "in": "query", "schema": { "type": "string", "default": "24h", "enum": ["1h", "24h", "7d", "30d"] } },
+          { "name": "X-API-Key", "in": "header", "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": { "application/json": { "schema": { "type": "object", "properties": { "success": { "type": "boolean", "default": true }, "message": { "type": "string", "default": "OK" }, "data": { "type": "object" } } } } }
+          }
+        }
+      }
+    },
+    "/builders/stats/all-timeframes": {
+      "get": {
+        "tags": ["Builders"],
+        "summary": "Builder stats across all timeframes",
+        "description": "Returns builder stats for 1h, 24h, 7d and 30d in a single call.",
+        "parameters": [
+          { "name": "X-API-Key", "in": "header", "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": { "application/json": { "schema": { "type": "object", "properties": { "success": { "type": "boolean", "default": true }, "message": { "type": "string", "default": "OK" }, "data": { "type": "object" } } } } }
+          }
+        }
+      }
+    },
+    "/builders/{builder_address}/stats": {
+      "get": {
+        "tags": ["Builders"],
+        "summary": "Builder detail stats",
+        "description": "Per-coin breakdown and period-over-period variations for a specific builder.",
+        "parameters": [
+          { "name": "builder_address", "in": "path", "required": true, "schema": { "type": "string" } },
+          { "name": "timeframe", "in": "query", "schema": { "type": "string", "default": "24h", "enum": ["1h", "24h", "7d", "30d"] } },
+          { "name": "X-API-Key", "in": "header", "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": { "application/json": { "schema": { "type": "object", "properties": { "success": { "type": "boolean", "default": true }, "message": { "type": "string", "default": "OK" }, "data": { "type": "object" } } } } }
+          }
+        }
+      }
+    },
+    "/builders/{builder_address}/users": {
+      "get": {
+        "tags": ["Builders"],
+        "summary": "Builder top users",
+        "description": "Top users ranked by builder fees for a specific builder.",
+        "parameters": [
+          { "name": "builder_address", "in": "path", "required": true, "schema": { "type": "string" } },
+          { "name": "timeframe", "in": "query", "schema": { "type": "string", "default": "24h", "enum": ["1h", "24h", "7d", "30d"] } },
+          { "name": "limit", "in": "query", "schema": { "type": "integer", "default": 20, "minimum": 1, "maximum": 100 } },
+          { "name": "X-API-Key", "in": "header", "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": { "application/json": { "schema": { "type": "object", "properties": { "success": { "type": "boolean", "default": true }, "message": { "type": "string", "default": "OK" }, "data": { "type": "object" } } } } }
+          }
+        }
+      }
+    },
+    "/builders/list": {
+      "get": {
+        "tags": ["Builders"],
+        "summary": "List all builders",
+        "description": "Returns all known builders with address, name and referrer info.",
+        "parameters": [
+          { "name": "X-API-Key", "in": "header", "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": { "application/json": { "schema": { "type": "object", "properties": { "success": { "type": "boolean", "default": true }, "message": { "type": "string", "default": "OK" }, "data": { "type": "object" } } } } }
+          }
+        }
+      }
+    },
+    "/funding/fundingHistory": {
+      "get": {
+        "tags": ["Funding"],
+        "summary": "Funding rate history",
+        "description": "Hourly funding snapshots for a coin. Returns fundingRate, premium and time.",
+        "parameters": [
+          { "name": "coin", "in": "query", "required": true, "description": "Coin symbol (e.g. BTC)", "schema": { "type": "string" } },
+          { "name": "startTime", "in": "query", "description": "Start time (epoch ms)", "schema": { "type": "integer" } },
+          { "name": "endTime", "in": "query", "description": "End time (epoch ms)", "schema": { "type": "integer" } },
+          { "name": "limit", "in": "query", "schema": { "type": "integer", "default": 500, "minimum": 1, "maximum": 5000 } },
+          { "name": "X-API-Key", "in": "header", "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": { "application/json": { "schema": { "type": "object", "properties": { "success": { "type": "boolean", "default": true }, "message": { "type": "string", "default": "OK" }, "data": { "type": "object" } } } } }
+          }
+        }
+      }
+    },
+    "/funding/userFunding": {
+      "get": {
+        "tags": ["Funding"],
+        "summary": "User funding payments",
+        "description": "Funding payments for a user. Returns time, coin, usdc, szi, delta.",
+        "parameters": [
+          { "name": "user", "in": "query", "required": true, "description": "User address (0x…)", "schema": { "type": "string" } },
+          { "name": "startTime", "in": "query", "description": "Start time (epoch ms)", "schema": { "type": "integer" } },
+          { "name": "endTime", "in": "query", "description": "End time (epoch ms)", "schema": { "type": "integer" } },
+          { "name": "limit", "in": "query", "schema": { "type": "integer", "default": 500 } },
+          { "name": "X-API-Key", "in": "header", "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": { "application/json": { "schema": { "type": "object", "properties": { "success": { "type": "boolean", "default": true }, "message": { "type": "string", "default": "OK" }, "data": { "type": "object" } } } } }
+          }
+        }
+      }
+    },
+    "/funding/predictedFundings": {
+      "get": {
+        "tags": ["Funding"],
+        "summary": "Predicted funding rates",
+        "description": "Latest funding snapshot per coin (predicted next funding).",
+        "parameters": [
+          { "name": "X-API-Key", "in": "header", "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": { "application/json": { "schema": { "type": "object", "properties": { "success": { "type": "boolean", "default": true }, "message": { "type": "string", "default": "OK" }, "data": { "type": "object" } } } } }
+          }
+        }
+      }
+    },
+    "/hip3/overview": {
+      "get": {
+        "tags": ["HIP-3"],
+        "summary": "HIP-3 overview",
+        "description": "Aggregated HIP-3 statistics.",
+        "parameters": [
+          { "name": "X-API-Key", "in": "header", "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": { "application/json": { "schema": { "type": "object", "properties": { "success": { "type": "boolean", "default": true }, "message": { "type": "string", "default": "OK" }, "data": { "type": "object" } } } } }
+          }
+        }
+      }
+    },
+    "/hip3/top-movers": {
+      "get": {
+        "tags": ["HIP-3"],
+        "summary": "Top movers",
+        "description": "Top HIP-3 assets by price movement.",
+        "parameters": [
+          { "name": "limit", "in": "query", "schema": { "type": "integer", "default": 20, "minimum": 1, "maximum": 100 } },
+          { "name": "X-API-Key", "in": "header", "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": { "application/json": { "schema": { "type": "object", "properties": { "success": { "type": "boolean", "default": true }, "message": { "type": "string", "default": "OK" }, "data": { "type": "object" } } } } }
+          }
+        }
+      }
+    },
+    "/hip3/dexs": {
+      "get": {
+        "tags": ["HIP-3"],
+        "summary": "List DEXs",
+        "description": "Returns all registered HIP-3 DEXs.",
+        "parameters": [
+          { "name": "limit", "in": "query", "schema": { "type": "integer", "default": 100, "minimum": 1, "maximum": 500 } },
+          { "name": "offset", "in": "query", "schema": { "type": "integer", "default": 0 } },
+          { "name": "X-API-Key", "in": "header", "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": { "application/json": { "schema": { "type": "object", "properties": { "success": { "type": "boolean", "default": true }, "message": { "type": "string", "default": "OK" }, "data": { "type": "object" } } } } }
+          }
+        }
+      }
+    },
+    "/hip3/dexs/{dex_id}": {
+      "get": {
+        "tags": ["HIP-3"],
+        "summary": "Get DEX by ID",
+        "parameters": [
+          { "name": "dex_id", "in": "path", "required": true, "schema": { "type": "string" } },
+          { "name": "X-API-Key", "in": "header", "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": { "application/json": { "schema": { "type": "object", "properties": { "success": { "type": "boolean", "default": true }, "message": { "type": "string", "default": "OK" }, "data": { "type": "object" } } } } }
+          },
+          "404": { "description": "DEX not found" }
+        }
+      }
+    },
+    "/hip3/assets": {
+      "get": {
+        "tags": ["HIP-3"],
+        "summary": "List assets",
+        "description": "Returns HIP-3 asset configurations. Optionally filter by DEX or search term.",
+        "parameters": [
+          { "name": "dex_id", "in": "query", "description": "Filter by DEX ID", "schema": { "type": "string" } },
+          { "name": "search", "in": "query", "description": "Search by ticker or name", "schema": { "type": "string" } },
+          { "name": "limit", "in": "query", "schema": { "type": "integer", "default": 200, "minimum": 1, "maximum": 1000 } },
+          { "name": "offset", "in": "query", "schema": { "type": "integer", "default": 0 } },
+          { "name": "X-API-Key", "in": "header", "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": { "application/json": { "schema": { "type": "object", "properties": { "success": { "type": "boolean", "default": true }, "message": { "type": "string", "default": "OK" }, "data": { "type": "object" } } } } }
+          }
+        }
+      }
+    },
+    "/hip3/assets/{ticker}": {
+      "get": {
+        "tags": ["HIP-3"],
+        "summary": "Get asset by ticker",
+        "parameters": [
+          { "name": "ticker", "in": "path", "required": true, "schema": { "type": "string" } },
+          { "name": "X-API-Key", "in": "header", "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": { "application/json": { "schema": { "type": "object", "properties": { "success": { "type": "boolean", "default": true }, "message": { "type": "string", "default": "OK" }, "data": { "type": "object" } } } } }
+          },
+          "404": { "description": "Asset not found" }
+        }
+      }
+    },
+    "/hip3/auctions": {
+      "get": {
+        "tags": ["HIP-3"],
+        "summary": "List auctions",
+        "parameters": [
+          { "name": "status", "in": "query", "description": "Filter by auction status", "schema": { "type": "string", "enum": ["open", "closed", "expired"] } },
+          { "name": "limit", "in": "query", "schema": { "type": "integer", "default": 50, "minimum": 1, "maximum": 200 } },
+          { "name": "offset", "in": "query", "schema": { "type": "integer", "default": 0 } },
+          { "name": "X-API-Key", "in": "header", "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": { "application/json": { "schema": { "type": "object", "properties": { "success": { "type": "boolean", "default": true }, "message": { "type": "string", "default": "OK" }, "data": { "type": "object" } } } } }
+          }
+        }
+      }
+    },
+    "/hip3/auctions/current": {
+      "get": {
+        "tags": ["HIP-3"],
+        "summary": "Current auction",
+        "description": "Returns the currently active auction, or null if none.",
+        "parameters": [
+          { "name": "X-API-Key", "in": "header", "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": { "application/json": { "schema": { "type": "object", "properties": { "success": { "type": "boolean", "default": true }, "message": { "type": "string", "default": "OK" }, "data": { "type": "object" } } } } }
+          }
+        }
+      }
+    },
+    "/hip3/auctions/history": {
+      "get": {
+        "tags": ["HIP-3"],
+        "summary": "Auction history",
+        "parameters": [
+          { "name": "dex_id", "in": "query", "description": "Filter by DEX ID", "schema": { "type": "string" } },
+          { "name": "limit", "in": "query", "schema": { "type": "integer", "default": 100, "minimum": 1, "maximum": 500 } },
+          { "name": "offset", "in": "query", "schema": { "type": "integer", "default": 0 } },
+          { "name": "X-API-Key", "in": "header", "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": { "application/json": { "schema": { "type": "object", "properties": { "success": { "type": "boolean", "default": true }, "message": { "type": "string", "default": "OK" }, "data": { "type": "object" } } } } }
+          }
+        }
+      }
+    },
+    "/hip3/snapshots": {
+      "get": {
+        "tags": ["HIP-3"],
+        "summary": "Live snapshots",
+        "description": "Latest price/volume snapshots for HIP-3 assets.",
+        "parameters": [
+          { "name": "dex_id", "in": "query", "schema": { "type": "string" } },
+          { "name": "coin", "in": "query", "schema": { "type": "string" } },
+          { "name": "X-API-Key", "in": "header", "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": { "application/json": { "schema": { "type": "object", "properties": { "success": { "type": "boolean", "default": true }, "message": { "type": "string", "default": "OK" }, "data": { "type": "object" } } } } }
+          }
+        }
+      }
+    },
+    "/hip3/ohlcv": {
+      "get": {
+        "tags": ["HIP-3"],
+        "summary": "OHLCV bars",
+        "description": "OHLCV candlestick data for a HIP-3 asset.",
+        "parameters": [
+          { "name": "coin", "in": "query", "required": true, "description": "Coin ticker", "schema": { "type": "string" } },
+          { "name": "dex_id", "in": "query", "schema": { "type": "string" } },
+          { "name": "start", "in": "query", "schema": { "type": "string", "format": "date-time" } },
+          { "name": "end", "in": "query", "schema": { "type": "string", "format": "date-time" } },
+          { "name": "limit", "in": "query", "schema": { "type": "integer", "default": 168, "minimum": 1, "maximum": 2000 } },
+          { "name": "X-API-Key", "in": "header", "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": { "application/json": { "schema": { "type": "object", "properties": { "success": { "type": "boolean", "default": true }, "message": { "type": "string", "default": "OK" }, "data": { "type": "object" } } } } }
+          }
+        }
+      }
+    },
+    "/hip3/oracle/stats": {
+      "get": {
+        "tags": ["HIP-3"],
+        "summary": "Oracle stats (1m granularity)",
+        "description": "1-minute oracle price statistics for a DEX.",
+        "parameters": [
+          { "name": "dex_id", "in": "query", "required": true, "schema": { "type": "string" } },
+          { "name": "asset_id", "in": "query", "schema": { "type": "integer" } },
+          { "name": "start", "in": "query", "schema": { "type": "string", "format": "date-time" } },
+          { "name": "end", "in": "query", "schema": { "type": "string", "format": "date-time" } },
+          { "name": "limit", "in": "query", "schema": { "type": "integer", "default": 1440, "minimum": 1, "maximum": 10000 } },
+          { "name": "X-API-Key", "in": "header", "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": { "application/json": { "schema": { "type": "object", "properties": { "success": { "type": "boolean", "default": true }, "message": { "type": "string", "default": "OK" }, "data": { "type": "object" } } } } }
+          }
+        }
+      }
+    },
+    "/hip3/fills": {
+      "get": {
+        "tags": ["HIP-3"],
+        "summary": "HIP-3 fills",
+        "description": "Fills on HIP-3 markets.",
+        "parameters": [
+          { "name": "dex_id", "in": "query", "schema": { "type": "string" } },
+          { "name": "coin", "in": "query", "schema": { "type": "string" } },
+          { "name": "user", "in": "query", "schema": { "type": "string" } },
+          { "name": "side", "in": "query", "schema": { "type": "string" } },
+          { "name": "start", "in": "query", "schema": { "type": "string", "format": "date-time" } },
+          { "name": "end", "in": "query", "schema": { "type": "string", "format": "date-time" } },
+          { "name": "min_notional", "in": "query", "description": "Minimum notional in USD", "schema": { "type": "number" } },
+          { "name": "limit", "in": "query", "schema": { "type": "integer", "default": 100, "minimum": 1, "maximum": 1000 } },
+          { "name": "offset", "in": "query", "schema": { "type": "integer", "default": 0 } },
+          { "name": "X-API-Key", "in": "header", "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": { "application/json": { "schema": { "type": "object", "properties": { "success": { "type": "boolean", "default": true }, "message": { "type": "string", "default": "OK" }, "data": { "type": "object" } } } } }
+          }
+        }
+      }
+    },
+    "/hip3/stats/traders": {
+      "get": {
+        "tags": ["HIP-3"],
+        "summary": "Trader stats",
+        "description": "Aggregated trader statistics on HIP-3 markets.",
+        "parameters": [
+          { "name": "dex_id", "in": "query", "schema": { "type": "string" } },
+          { "name": "coin", "in": "query", "schema": { "type": "string" } },
+          { "name": "limit", "in": "query", "schema": { "type": "integer", "default": 100, "minimum": 1, "maximum": 500 } },
+          { "name": "offset", "in": "query", "schema": { "type": "integer", "default": 0 } },
+          { "name": "X-API-Key", "in": "header", "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": { "application/json": { "schema": { "type": "object", "properties": { "success": { "type": "boolean", "default": true }, "message": { "type": "string", "default": "OK" }, "data": { "type": "object" } } } } }
+          }
+        }
+      }
+    },
+    "/hip3/leaderboard": {
+      "get": {
+        "tags": ["HIP-3"],
+        "summary": "HIP-3 leaderboard",
+        "parameters": [
+          { "name": "by", "in": "query", "description": "Ranking criterion", "schema": { "type": "string", "default": "volume", "enum": ["volume", "pnl", "trades", "fees"] } },
+          { "name": "dex_id", "in": "query", "schema": { "type": "string" } },
+          { "name": "limit", "in": "query", "schema": { "type": "integer", "default": 50, "minimum": 1, "maximum": 200 } },
+          { "name": "X-API-Key", "in": "header", "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": { "application/json": { "schema": { "type": "object", "properties": { "success": { "type": "boolean", "default": true }, "message": { "type": "string", "default": "OK" }, "data": { "type": "object" } } } } }
+          }
+        }
+      }
+    },
+    "/hip3/users/{address}/overview": {
+      "get": {
+        "tags": ["HIP-3"],
+        "summary": "User HIP-3 overview",
+        "parameters": [
+          { "name": "address", "in": "path", "required": true, "schema": { "type": "string" } },
+          { "name": "X-API-Key", "in": "header", "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": { "application/json": { "schema": { "type": "object", "properties": { "success": { "type": "boolean", "default": true }, "message": { "type": "string", "default": "OK" }, "data": { "type": "object" } } } } }
+          }
+        }
+      }
+    },
+    "/hip3/users/{address}/fills": {
+      "get": {
+        "tags": ["HIP-3"],
+        "summary": "User HIP-3 fills",
+        "parameters": [
+          { "name": "address", "in": "path", "required": true, "schema": { "type": "string" } },
+          { "name": "coin", "in": "query", "schema": { "type": "string" } },
+          { "name": "dex_id", "in": "query", "schema": { "type": "string" } },
+          { "name": "start", "in": "query", "schema": { "type": "string", "format": "date-time" } },
+          { "name": "end", "in": "query", "schema": { "type": "string", "format": "date-time" } },
+          { "name": "limit", "in": "query", "schema": { "type": "integer", "default": 100, "minimum": 1, "maximum": 1000 } },
+          { "name": "offset", "in": "query", "schema": { "type": "integer", "default": 0 } },
+          { "name": "X-API-Key", "in": "header", "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": { "application/json": { "schema": { "type": "object", "properties": { "success": { "type": "boolean", "default": true }, "message": { "type": "string", "default": "OK" }, "data": { "type": "object" } } } } }
+          }
+        }
+      }
+    },
+    "/hip3/users/{address}/coins": {
+      "get": {
+        "tags": ["HIP-3"],
+        "summary": "User HIP-3 coin stats",
+        "parameters": [
+          { "name": "address", "in": "path", "required": true, "schema": { "type": "string" } },
+          { "name": "limit", "in": "query", "schema": { "type": "integer", "default": 20, "minimum": 1, "maximum": 100 } },
+          { "name": "X-API-Key", "in": "header", "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": { "application/json": { "schema": { "type": "object", "properties": { "success": { "type": "boolean", "default": true }, "message": { "type": "string", "default": "OK" }, "data": { "type": "object" } } } } }
+          }
+        }
+      }
+    },
+    "/liquidations/": {
+      "get": {
+        "tags": ["Liquidations"],
+        "summary": "List liquidations",
+        "description": "Liquidation events with optional filters on coin, user, notional amount and time range.",
+        "parameters": [
+          { "name": "coin", "in": "query", "description": "Coin symbol", "schema": { "type": "string" } },
+          { "name": "user", "in": "query", "description": "Liquidated user address", "schema": { "type": "string" } },
+          { "name": "start_time", "in": "query", "schema": { "type": "string", "format": "date-time" } },
+          { "name": "end_time", "in": "query", "schema": { "type": "string", "format": "date-time" } },
+          { "name": "amount_dollars", "in": "query", "description": "Minimum notional in USD", "schema": { "type": "number", "minimum": 0 } },
+          { "name": "limit", "in": "query", "schema": { "type": "integer", "default": 100, "minimum": 1, "maximum": 1000 } },
+          { "name": "cursor", "in": "query", "description": "Keyset cursor (`<time_ms>:<tid>`)", "schema": { "type": "string" } },
+          { "name": "order", "in": "query", "schema": { "type": "string", "default": "DESC", "enum": ["ASC", "DESC"] } },
+          { "name": "X-API-Key", "in": "header", "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": { "application/json": { "schema": { "type": "object", "properties": { "success": { "type": "boolean", "default": true }, "message": { "type": "string", "default": "OK" }, "data": { "type": "object" } } } } }
+          }
+        }
+      }
+    },
+    "/liquidations/recent": {
+      "get": {
+        "tags": ["Liquidations"],
+        "summary": "Recent liquidations",
+        "description": "Recent liquidation events (defaults to 2h window). Same filters as `/liquidations/`.",
+        "parameters": [
+          { "name": "coin", "in": "query", "schema": { "type": "string" } },
+          { "name": "user", "in": "query", "schema": { "type": "string" } },
+          { "name": "start_time", "in": "query", "schema": { "type": "string", "format": "date-time" } },
+          { "name": "end_time", "in": "query", "schema": { "type": "string", "format": "date-time" } },
+          { "name": "amount_dollars", "in": "query", "schema": { "type": "number", "minimum": 0 } },
+          { "name": "limit", "in": "query", "schema": { "type": "integer", "default": 100, "minimum": 1, "maximum": 1000 } },
+          { "name": "cursor", "in": "query", "schema": { "type": "string" } },
+          { "name": "order", "in": "query", "schema": { "type": "string", "default": "DESC", "enum": ["ASC", "DESC"] } },
+          { "name": "X-API-Key", "in": "header", "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": { "application/json": { "schema": { "type": "object", "properties": { "success": { "type": "boolean", "default": true }, "message": { "type": "string", "default": "OK" }, "data": { "type": "object" } } } } }
+          }
+        }
+      }
+    },
+    "/overview/top-traders-24h": {
+      "get": {
+        "tags": ["Overview"],
+        "summary": "Top traders (24h)",
+        "description": "Top traders in the last 24 hours ranked by PnL, volume or trades.",
+        "parameters": [
+          { "name": "sort", "in": "query", "description": "Sort criterion", "schema": { "type": "string", "default": "pnl_pos", "enum": ["pnl_pos", "pnl_neg", "volume", "trades"] } },
+          { "name": "limit", "in": "query", "schema": { "type": "integer", "default": 20, "minimum": 1, "maximum": 50 } },
+          { "name": "X-API-Key", "in": "header", "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": { "application/json": { "schema": { "type": "object", "properties": { "success": { "type": "boolean", "default": true }, "message": { "type": "string", "default": "OK" }, "data": { "type": "object" } } } } }
+          }
+        }
+      }
+    },
+    "/overview/stats": {
+      "get": {
+        "tags": ["Overview"],
+        "summary": "Overview stats",
+        "description": "Global dashboard metrics: volume, fees, unique traders, PnL.",
+        "parameters": [
+          { "name": "timeframe", "in": "query", "schema": { "type": "string", "default": "24h", "enum": ["1h", "24h", "7d", "30d"] } },
+          { "name": "X-API-Key", "in": "header", "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": { "application/json": { "schema": { "type": "object", "properties": { "success": { "type": "boolean", "default": true }, "message": { "type": "string", "default": "OK" }, "data": { "type": "object" } } } } }
+          }
+        }
+      }
+    },
+    "/spot/tokens": {
+      "get": {
+        "tags": ["Spot"],
+        "summary": "List spot tokens",
+        "description": "Returns spot token metadata.",
+        "parameters": [
+          { "name": "search", "in": "query", "description": "Search by token name or symbol", "schema": { "type": "string" } },
+          { "name": "limit", "in": "query", "schema": { "type": "integer", "default": 100, "minimum": 1, "maximum": 500 } },
+          { "name": "offset", "in": "query", "schema": { "type": "integer", "default": 0 } },
+          { "name": "X-API-Key", "in": "header", "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": { "application/json": { "schema": { "type": "object", "properties": { "success": { "type": "boolean", "default": true }, "message": { "type": "string", "default": "OK" }, "data": { "type": "object" } } } } }
+          }
+        }
+      }
+    },
+    "/spot/pairs": {
+      "get": {
+        "tags": ["Spot"],
+        "summary": "List spot pairs",
+        "parameters": [
+          { "name": "X-API-Key", "in": "header", "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": { "application/json": { "schema": { "type": "object", "properties": { "success": { "type": "boolean", "default": true }, "message": { "type": "string", "default": "OK" }, "data": { "type": "object" } } } } }
+          }
+        }
+      }
+    },
+    "/spot/auctions": {
+      "get": {
+        "tags": ["Spot"],
+        "summary": "Spot deploy auctions",
+        "parameters": [
+          { "name": "status", "in": "query", "schema": { "type": "string", "enum": ["open", "closed"] } },
+          { "name": "limit", "in": "query", "schema": { "type": "integer", "default": 50 } },
+          { "name": "offset", "in": "query", "schema": { "type": "integer", "default": 0 } },
+          { "name": "X-API-Key", "in": "header", "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": { "application/json": { "schema": { "type": "object", "properties": { "success": { "type": "boolean", "default": true }, "message": { "type": "string", "default": "OK" }, "data": { "type": "object" } } } } }
+          }
+        }
+      }
+    },
+    "/twap/orders": {
+      "get": {
+        "tags": ["TWAPs"],
+        "summary": "List TWAP orders",
+        "description": "Returns TWAP orders with optional filters.",
+        "parameters": [
+          { "name": "user", "in": "query", "description": "User address", "schema": { "type": "string" } },
+          { "name": "coin", "in": "query", "schema": { "type": "string" } },
+          { "name": "status", "in": "query", "schema": { "type": "string", "enum": ["running", "terminated", "finished"] } },
+          { "name": "start_time", "in": "query", "schema": { "type": "string", "format": "date-time" } },
+          { "name": "end_time", "in": "query", "schema": { "type": "string", "format": "date-time" } },
+          { "name": "limit", "in": "query", "schema": { "type": "integer", "default": 100 } },
+          { "name": "offset", "in": "query", "schema": { "type": "integer", "default": 0 } },
+          { "name": "X-API-Key", "in": "header", "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": { "application/json": { "schema": { "type": "object", "properties": { "success": { "type": "boolean", "default": true }, "message": { "type": "string", "default": "OK" }, "data": { "type": "object" } } } } }
+          }
+        }
+      }
+    },
+    "/twap/orders/{twap_id}": {
+      "get": {
+        "tags": ["TWAPs"],
+        "summary": "Get TWAP order by ID",
+        "parameters": [
+          { "name": "twap_id", "in": "path", "required": true, "schema": { "type": "integer" } },
+          { "name": "X-API-Key", "in": "header", "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": { "application/json": { "schema": { "type": "object", "properties": { "success": { "type": "boolean", "default": true }, "message": { "type": "string", "default": "OK" }, "data": { "type": "object" } } } } }
+          },
+          "404": { "description": "TWAP order not found" }
+        }
+      }
+    },
+    "/twap/orders/{twap_id}/fills": {
+      "get": {
+        "tags": ["TWAPs"],
+        "summary": "Fills for a TWAP order",
+        "parameters": [
+          { "name": "twap_id", "in": "path", "required": true, "schema": { "type": "integer" } },
+          { "name": "limit", "in": "query", "schema": { "type": "integer", "default": 100 } },
+          { "name": "offset", "in": "query", "schema": { "type": "integer", "default": 0 } },
+          { "name": "X-API-Key", "in": "header", "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": { "application/json": { "schema": { "type": "object", "properties": { "success": { "type": "boolean", "default": true }, "message": { "type": "string", "default": "OK" }, "data": { "type": "object" } } } } }
+          }
+        }
+      }
+    },
+    "/twap/stats": {
+      "get": {
+        "tags": ["TWAPs"],
+        "summary": "TWAP execution stats",
+        "description": "Aggregated TWAP execution statistics.",
+        "parameters": [
+          { "name": "coin", "in": "query", "schema": { "type": "string" } },
+          { "name": "start_time", "in": "query", "schema": { "type": "string", "format": "date-time" } },
+          { "name": "end_time", "in": "query", "schema": { "type": "string", "format": "date-time" } },
+          { "name": "X-API-Key", "in": "header", "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": { "application/json": { "schema": { "type": "object", "properties": { "success": { "type": "boolean", "default": true }, "message": { "type": "string", "default": "OK" }, "data": { "type": "object" } } } } }
+          }
+        }
+      }
+    },
+    "/twap/fills": {
+      "get": {
+        "tags": ["TWAPs"],
+        "summary": "List TWAP fills",
+        "parameters": [
+          { "name": "user", "in": "query", "schema": { "type": "string" } },
+          { "name": "coin", "in": "query", "schema": { "type": "string" } },
+          { "name": "start_time", "in": "query", "schema": { "type": "string", "format": "date-time" } },
+          { "name": "end_time", "in": "query", "schema": { "type": "string", "format": "date-time" } },
+          { "name": "limit", "in": "query", "schema": { "type": "integer", "default": 100 } },
+          { "name": "offset", "in": "query", "schema": { "type": "integer", "default": 0 } },
+          { "name": "X-API-Key", "in": "header", "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": { "application/json": { "schema": { "type": "object", "properties": { "success": { "type": "boolean", "default": true }, "message": { "type": "string", "default": "OK" }, "data": { "type": "object" } } } } }
+          }
+        }
+      }
+    },
+    "/vaults/": {
+      "get": {
+        "tags": ["Vaults"],
+        "summary": "List vaults",
+        "parameters": [
+          { "name": "search", "in": "query", "description": "Search by vault name", "schema": { "type": "string" } },
+          { "name": "limit", "in": "query", "schema": { "type": "integer", "default": 50, "minimum": 1, "maximum": 200 } },
+          { "name": "offset", "in": "query", "schema": { "type": "integer", "default": 0 } },
+          { "name": "X-API-Key", "in": "header", "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": { "application/json": { "schema": { "type": "object", "properties": { "success": { "type": "boolean", "default": true }, "message": { "type": "string", "default": "OK" }, "data": { "type": "object" } } } } }
+          }
+        }
+      }
+    },
+    "/vaults/{vault_address}": {
+      "get": {
+        "tags": ["Vaults"],
+        "summary": "Get vault by address",
+        "parameters": [
+          { "name": "vault_address", "in": "path", "required": true, "schema": { "type": "string" } },
+          { "name": "X-API-Key", "in": "header", "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": { "application/json": { "schema": { "type": "object", "properties": { "success": { "type": "boolean", "default": true }, "message": { "type": "string", "default": "OK" }, "data": { "type": "object" } } } } }
+          },
+          "404": { "description": "Vault not found" }
+        }
+      }
+    },
+    "/vaults/{vault_address}/summary": {
+      "get": {
+        "tags": ["Vaults"],
+        "summary": "Vault summary",
+        "parameters": [
+          { "name": "vault_address", "in": "path", "required": true, "schema": { "type": "string" } },
+          { "name": "X-API-Key", "in": "header", "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": { "application/json": { "schema": { "type": "object", "properties": { "success": { "type": "boolean", "default": true }, "message": { "type": "string", "default": "OK" }, "data": { "type": "object" } } } } }
+          }
+        }
+      }
+    },
+    "/vaults/{vault_address}/equity": {
+      "get": {
+        "tags": ["Vaults"],
+        "summary": "Vault equity history",
+        "parameters": [
+          { "name": "vault_address", "in": "path", "required": true, "schema": { "type": "string" } },
+          { "name": "start_time", "in": "query", "schema": { "type": "string", "format": "date-time" } },
+          { "name": "end_time", "in": "query", "schema": { "type": "string", "format": "date-time" } },
+          { "name": "limit", "in": "query", "schema": { "type": "integer", "default": 100 } },
+          { "name": "X-API-Key", "in": "header", "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": { "application/json": { "schema": { "type": "object", "properties": { "success": { "type": "boolean", "default": true }, "message": { "type": "string", "default": "OK" }, "data": { "type": "object" } } } } }
+          }
+        }
+      }
+    },
+    "/vaults/{vault_address}/ledger": {
+      "get": {
+        "tags": ["Vaults"],
+        "summary": "Vault ledger",
+        "parameters": [
+          { "name": "vault_address", "in": "path", "required": true, "schema": { "type": "string" } },
+          { "name": "start_time", "in": "query", "schema": { "type": "string", "format": "date-time" } },
+          { "name": "end_time", "in": "query", "schema": { "type": "string", "format": "date-time" } },
+          { "name": "limit", "in": "query", "schema": { "type": "integer", "default": 100 } },
+          { "name": "offset", "in": "query", "schema": { "type": "integer", "default": 0 } },
+          { "name": "X-API-Key", "in": "header", "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": { "application/json": { "schema": { "type": "object", "properties": { "success": { "type": "boolean", "default": true }, "message": { "type": "string", "default": "OK" }, "data": { "type": "object" } } } } }
+          }
+        }
+      }
+    },
+    "/evm/stats": {
+      "get": {
+        "tags": ["EVM"],
+        "summary": "Global EVM indexing stats",
+        "description": "Total blocks, transactions, logs indexed and block range.",
+        "parameters": [
+          { "name": "X-API-Key", "in": "header", "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": { "application/json": { "schema": { "type": "object", "properties": { "success": { "type": "boolean", "default": true }, "message": { "type": "string", "default": "OK" }, "data": { "type": "object" } } } } }
+          }
+        }
+      }
+    },
+    "/evm/stats/daily": {
+      "get": {
+        "tags": ["EVM"],
+        "summary": "Daily block/tx stats",
+        "description": "Daily block and transaction counts over a configurable lookback window.",
+        "parameters": [
+          { "name": "days", "in": "query", "description": "Number of days to look back", "schema": { "type": "integer", "default": 30, "minimum": 1, "maximum": 365 } },
+          { "name": "X-API-Key", "in": "header", "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": { "application/json": { "schema": { "type": "object", "properties": { "success": { "type": "boolean", "default": true }, "message": { "type": "string", "default": "OK" }, "data": { "type": "object" } } } } }
+          }
+        }
+      }
+    },
+    "/evm/blocks": {
+      "get": {
+        "tags": ["EVM"],
+        "summary": "List EVM blocks",
+        "description": "Returns EVM blocks with optional filters on block range and time range.",
+        "parameters": [
+          { "name": "start_block", "in": "query", "description": "Min block number", "schema": { "type": "integer" } },
+          { "name": "end_block", "in": "query", "description": "Max block number", "schema": { "type": "integer" } },
+          { "name": "start_time", "in": "query", "description": "Start time (UTC)", "schema": { "type": "string", "format": "date-time" } },
+          { "name": "end_time", "in": "query", "description": "End time (UTC)", "schema": { "type": "string", "format": "date-time" } },
+          { "name": "limit", "in": "query", "schema": { "type": "integer", "default": 100, "minimum": 1, "maximum": 1000 } },
+          { "name": "offset", "in": "query", "schema": { "type": "integer", "default": 0 } },
+          { "name": "X-API-Key", "in": "header", "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": { "application/json": { "schema": { "type": "object", "properties": { "success": { "type": "boolean", "default": true }, "message": { "type": "string", "default": "OK" }, "data": { "type": "object" } } } } }
+          }
+        }
+      }
+    },
+    "/evm/blocks/{block_number}": {
+      "get": {
+        "tags": ["EVM"],
+        "summary": "Get block by number",
+        "description": "Returns a single EVM block by its block number.",
+        "parameters": [
+          { "name": "block_number", "in": "path", "required": true, "description": "Block number", "schema": { "type": "integer" } },
+          { "name": "X-API-Key", "in": "header", "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": { "application/json": { "schema": { "type": "object", "properties": { "success": { "type": "boolean", "default": true }, "message": { "type": "string", "default": "OK" }, "data": { "type": "object" } } } } }
+          },
+          "404": { "description": "Block not found" }
+        }
+      }
+    },
+    "/evm/transactions": {
+      "get": {
+        "tags": ["EVM"],
+        "summary": "List EVM transactions",
+        "description": "Returns EVM transactions with optional filters.",
+        "parameters": [
+          { "name": "block_number", "in": "query", "description": "Filter by block number", "schema": { "type": "integer" } },
+          { "name": "to_addr", "in": "query", "description": "Filter by to address", "schema": { "type": "string" } },
+          { "name": "start_time", "in": "query", "description": "Start time (UTC)", "schema": { "type": "string", "format": "date-time" } },
+          { "name": "end_time", "in": "query", "description": "End time (UTC)", "schema": { "type": "string", "format": "date-time" } },
+          { "name": "include_system", "in": "query", "description": "Include system transactions", "schema": { "type": "boolean", "default": true } },
+          { "name": "limit", "in": "query", "schema": { "type": "integer", "default": 100, "minimum": 1, "maximum": 1000 } },
+          { "name": "offset", "in": "query", "schema": { "type": "integer", "default": 0 } },
+          { "name": "X-API-Key", "in": "header", "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": { "application/json": { "schema": { "type": "object", "properties": { "success": { "type": "boolean", "default": true }, "message": { "type": "string", "default": "OK" }, "data": { "type": "object" } } } } }
+          }
+        }
+      }
+    },
+    "/evm/blocks/{block_number}/transactions": {
+      "get": {
+        "tags": ["EVM"],
+        "summary": "Transactions in a specific block",
+        "description": "Returns all transactions in a given block.",
+        "parameters": [
+          { "name": "block_number", "in": "path", "required": true, "description": "Block number", "schema": { "type": "integer" } },
+          { "name": "X-API-Key", "in": "header", "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": { "application/json": { "schema": { "type": "object", "properties": { "success": { "type": "boolean", "default": true }, "message": { "type": "string", "default": "OK" }, "data": { "type": "object" } } } } }
+          }
+        }
+      }
+    },
+    "/evm/logs": {
+      "get": {
+        "tags": ["EVM"],
+        "summary": "List EVM event logs",
+        "description": "Returns EVM event logs with optional filters on block, contract address, and event signature.",
+        "parameters": [
+          { "name": "block_number", "in": "query", "description": "Filter by block number", "schema": { "type": "integer" } },
+          { "name": "address", "in": "query", "description": "Filter by contract address", "schema": { "type": "string" } },
+          { "name": "topic0", "in": "query", "description": "Filter by event signature (topic0)", "schema": { "type": "string" } },
+          { "name": "start_time", "in": "query", "description": "Start time (UTC)", "schema": { "type": "string", "format": "date-time" } },
+          { "name": "end_time", "in": "query", "description": "End time (UTC)", "schema": { "type": "string", "format": "date-time" } },
+          { "name": "limit", "in": "query", "schema": { "type": "integer", "default": 100, "minimum": 1, "maximum": 1000 } },
+          { "name": "offset", "in": "query", "schema": { "type": "integer", "default": 0 } },
+          { "name": "X-API-Key", "in": "header", "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": { "application/json": { "schema": { "type": "object", "properties": { "success": { "type": "boolean", "default": true }, "message": { "type": "string", "default": "OK" }, "data": { "type": "object" } } } } }
+          }
+        }
+      }
+    },
+    "/evm/ledger/transfers": {
+      "get": {
+        "tags": ["EVM"],
+        "summary": "List ledger transfers (L1 actions)",
+        "description": "L1 ledger transfers including withdraw3, usdSend, spotSend, sendAsset, usdClassTransfer, subAccountTransfer, vaultTransfer.",
+        "parameters": [
+          { "name": "user", "in": "query", "description": "Filter by user address (from or to)", "schema": { "type": "string" } },
+          { "name": "action_type", "in": "query", "description": "Filter by action type", "schema": { "type": "string", "enum": ["withdraw3", "usdSend", "spotSend", "sendAsset", "usdClassTransfer", "subAccountTransfer", "vaultTransfer"] } },
+          { "name": "token", "in": "query", "description": "Filter by token (partial match)", "schema": { "type": "string" } },
+          { "name": "start_time", "in": "query", "description": "Start time (UTC)", "schema": { "type": "string", "format": "date-time" } },
+          { "name": "end_time", "in": "query", "description": "End time (UTC)", "schema": { "type": "string", "format": "date-time" } },
+          { "name": "limit", "in": "query", "schema": { "type": "integer", "default": 100, "minimum": 1, "maximum": 1000 } },
+          { "name": "offset", "in": "query", "schema": { "type": "integer", "default": 0 } },
+          { "name": "X-API-Key", "in": "header", "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": { "application/json": { "schema": { "type": "object", "properties": { "success": { "type": "boolean", "default": true }, "message": { "type": "string", "default": "OK" }, "data": { "type": "object" } } } } }
+          }
+        }
+      }
+    },
+    "/evm/bridge/events": {
+      "get": {
+        "tags": ["EVM"],
+        "summary": "List bridge events (deposits/withdrawals)",
+        "description": "Bridge deposit votes, withdrawal finalizations, and signature events.",
+        "parameters": [
+          { "name": "user_addr", "in": "query", "description": "Filter by user address", "schema": { "type": "string" } },
+          { "name": "event_type", "in": "query", "description": "Filter by event type", "schema": { "type": "string", "enum": ["deposit_vote", "withdrawal_finalized", "withdrawal_sign", "withdraw3"] } },
+          { "name": "start_time", "in": "query", "description": "Start time (UTC)", "schema": { "type": "string", "format": "date-time" } },
+          { "name": "end_time", "in": "query", "description": "End time (UTC)", "schema": { "type": "string", "format": "date-time" } },
+          { "name": "limit", "in": "query", "schema": { "type": "integer", "default": 100, "minimum": 1, "maximum": 1000 } },
+          { "name": "offset", "in": "query", "schema": { "type": "integer", "default": 0 } },
+          { "name": "X-API-Key", "in": "header", "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": { "application/json": { "schema": { "type": "object", "properties": { "success": { "type": "boolean", "default": true }, "message": { "type": "string", "default": "OK" }, "data": { "type": "object" } } } } }
+          }
+        }
+      }
+    },
+    "/evm/user/{address}/ledger-events": {
+      "get": {
+        "tags": ["EVM"],
+        "summary": "Non-funding ledger events for a user",
+        "description": "Unified non-funding ledger history for a user. Combines ledger_transfers (usdSend, spotSend, sendAsset, withdraw3, usdClassTransfer, subAccountTransfer, vaultTransfer) and evm_bridge_events (deposit_vote, withdrawal_finalized).\n\nEvent types:\n- `deposit` — bridge deposit into Hyperliquid\n- `withdrawal` — withdraw3 or bridge withdrawal finalized\n- `transfer_in` — received via usdSend/spotSend/sendAsset\n- `transfer_out` — sent via usdSend/spotSend/sendAsset\n- `class_transfer` — perp ↔ spot USDC transfer\n- `sub_account` — sub-account transfer\n- `vault` — vault deposit/withdrawal",
+        "parameters": [
+          { "name": "address", "in": "path", "required": true, "description": "User address (0x…)", "schema": { "type": "string", "pattern": "^0x[0-9a-fA-F]{40}$" } },
+          { "name": "event_type", "in": "query", "description": "Filter by event type(s) (repeat param for multiple)", "schema": { "type": "array", "items": { "type": "string", "enum": ["deposit", "withdrawal", "transfer_in", "transfer_out", "class_transfer", "sub_account", "vault"] } }, "style": "form", "explode": true },
+          { "name": "start_time", "in": "query", "description": "Start time (UTC)", "schema": { "type": "string", "format": "date-time" } },
+          { "name": "end_time", "in": "query", "description": "End time (UTC)", "schema": { "type": "string", "format": "date-time" } },
+          { "name": "limit", "in": "query", "schema": { "type": "integer", "default": 100, "minimum": 1, "maximum": 1000 } },
+          { "name": "offset", "in": "query", "schema": { "type": "integer", "default": 0 } },
+          { "name": "X-API-Key", "in": "header", "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": { "application/json": { "schema": { "type": "object", "properties": { "success": { "type": "boolean", "default": true }, "message": { "type": "string", "default": "OK" }, "data": { "type": "object" } } } } }
+          }
+        }
+      }
+    },
+    "/evm/user/{address}/ledger-summary": {
+      "get": {
+        "tags": ["EVM"],
+        "summary": "Aggregated ledger summary per action type for a user",
+        "description": "Count and total amount per action type across all ledger transfers involving this user.",
+        "parameters": [
+          { "name": "address", "in": "path", "required": true, "description": "User address (0x…)", "schema": { "type": "string", "pattern": "^0x[0-9a-fA-F]{40}$" } },
+          { "name": "X-API-Key", "in": "header", "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": { "application/json": { "schema": { "type": "object", "properties": { "success": { "type": "boolean", "default": true }, "message": { "type": "string", "default": "OK" }, "data": { "type": "object" } } } } }
+          }
+        }
+      }
+    }
+  }
+}

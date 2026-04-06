@@ -4,4 +4,8 @@ description: L2 order book — snapshot then book deltas for one coin
 openapi-schema: "live-data/openapi-websocket.json L2BookSnapshot"
 ---
 
+<Note>
+  **Connection:** `wss://api.hypedexer.com/ws?mode=mirror` — the `?mode=mirror` parameter is required.
+</Note>
+
 Subscribe with `{"method":"subscribe","subscription":{"type":"l2Book","coin":"BTC"}}`. Initial book matches **`L2BookSnapshot`**; incremental updates use **`L2BookUpdate`**.

@@ -4,4 +4,8 @@ description: Trade events stream from volume file ingestion
 openapi-schema: "live-data/openapi-websocket.json TradesUpdate"
 ---
 
+<Note>
+  **Connection:** `wss://api.hypedexer.com/ws?mode=mirror` — the `?mode=mirror` parameter is required.
+</Note>
+
 Subscribe with `{"method":"subscribe","subscription":{"type":"trades"}}`. Events match **`TradesUpdate`**.

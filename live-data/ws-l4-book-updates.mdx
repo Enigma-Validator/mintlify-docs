@@ -4,4 +4,8 @@ description: L4 book update events only (no full snapshot on this channel)
 openapi-schema: "live-data/openapi-websocket.json L4BookUpdate"
 ---
 
+<Note>
+  **Connection:** `wss://api.hypedexer.com/ws?mode=mirror` — the `?mode=mirror` parameter is required.
+</Note>
+
 Subscribe with `{"method":"subscribe","subscription":{"type":"l4BookUpdates"}}`. Frames follow **`L4BookUpdate`** (same shape as incremental updates for **`l4Book`**).

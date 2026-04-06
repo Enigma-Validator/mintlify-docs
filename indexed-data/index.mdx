@@ -1,0 +1,32 @@
+---
+title: Indexed & Historical Data
+description: Historical and indexed Hyperliquid trading data — fills, liquidations, funding, vaults, TWAPs, spot, and more.
+seo:
+  title: Hyperliquid Historical & Indexed Data API | HypeDexer
+  description: Access historical Hyperliquid trading data — 247M+ indexed trades, liquidations, funding rates, vaults, TWAPs, and spot markets via REST and WebSocket APIs.
+---
+
+HypeDexer exposes **indexed historical** Hyperliquid data through our **HL Indexer**. This tab covers all processed, aggregated, and historical datasets available via REST and WebSocket.
+
+## Available data
+
+| Category | Description |
+|----------|-------------|
+| **Fills** | Complete trade execution history — perps and spot |
+| **Liquidations** | Real-time and historical liquidation events via WebSocket |
+| **Completed Trades** | Aggregated trade records streamed via WebSocket |
+| **Users** | Per-address portfolio, P&L, and activity |
+| **Funding** | Funding rate history and payments |
+| **Vaults** | Vault details, equity, summaries, and ledger |
+| **Spot** | Spot market metadata, pairs, and activity |
+| **TWAPs** | Time-weighted average price orders and history |
+| **Analytics & Overview** | Volume, open interest, and market-level KPIs |
+
+## Endpoints
+
+- **REST API** — query any of the above via `GET` on `api.hypedexer.com`
+- **WebSocket** — subscribe to real-time streams for completed trades, spot fills, recent activity, and liquidations via `wss://api.hypedexer.com/ws`
+
+<Info>
+  For reproduced Hyperliquid live endpoints (order books, allMids, trades), see the **Live Data** tab.
+</Info>

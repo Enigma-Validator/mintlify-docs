@@ -7,19 +7,16 @@ We offer two WebSocket options:
 - **HypeDexer WS (native)** — curated streams powered by our indexer/database.
 - **Hyperliquid WS (bridged)** — we maintain upstream connections to the official WS and relay selected channels. Your usage is subject to our caps (below) and upstream availability.
 
-\> **Accounting & plan limits:** see the section **“WebSockets — General model & pricing characteristics”** for how events convert to credits and for per-plan caps. (You can place that section right below this page.)
+\> **Accounting & plan limits:** see the section **"WebSockets — General model & pricing characteristics"** for how events convert to credits and for per-plan caps. (You can place that section right below this page.)
 
 ---
 
 ## Endpoints (regions)
 
-Choose the closest region. Both regions expose the same WS protocol.
+A global load balancer automatically routes your connection to the nearest infrastructure (Frankfurt or Tokyo):
 
 ```text
-
-EU (Frankfurt): wss://[api-eu.hypedexer.com/ws](https://api-eu.hypedexer.com/ws)
-
-JP (Tokyo):     wss://[api-jp.hypedexer.com/ws](https://api-jp.hypedexer.com/ws)
+wss://api.hypedexer.com/ws
 ```
 
 ### Accounting (how WS usage is billed)
@@ -49,7 +46,7 @@ JP (Tokyo):     wss://[api-jp.hypedexer.com/ws](https://api-jp.hypedexer.com/ws)
 
 ### Notes & guardrails
 
-- **Bridged Hyperliquid WS:** we proxy a subset of official streams. To protect upstream limits, our per-tenant caps may be stricter than Hyperliquid’s global caps. If you need more, contact us.
+- **Bridged Hyperliquid WS:** we proxy a subset of official streams. To protect upstream limits, our per-tenant caps may be stricter than Hyperliquid's global caps. If you need more, contact us.
 - **Throughput & backpressure:** bursty clients may be throttled to preserve fairness.
 - **Read-only:** bridged channels are data/market feeds; order-posting or RPC limits (if any) are handled separately.
 - **Migration path:** if/when native HypeDexer WS covers your needs, prefer **HypeDexer WS** for simpler accounting and lower upstream coupling.

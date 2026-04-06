@@ -41,6 +41,13 @@
             ]
           },
           {
+            "group": "For Builders",
+            "pages": [
+              "guides/for-builders",
+              "guides/historical-trade-archive"
+            ]
+          },
+          {
             "group": "Business",
             "pages": [
               "guides/changelog",
@@ -50,11 +57,11 @@
         ]
       },
       {
-        "tab": "Historical data",
+        "tab": "Indexed Data",
         "groups": [
           {
             "group": "Introduction",
-            "pages": ["historical/index"]
+            "pages": ["indexed-data/index"]
           },
           {
             "group": "REST — HL Indexer",
@@ -89,7 +96,6 @@
             "openapi": "live-data/openapi-websocket.json",
             "pages": [
               "live-data/websocket",
-              "GET /ws",
               "live-data/ws-user-fills",
               "live-data/ws-all-fills",
               "live-data/ws-all-mids",
@@ -97,6 +103,166 @@
               "live-data/ws-l2-book",
               "live-data/ws-l4-book",
               "live-data/ws-l4-book-updates"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "HIP-3",
+        "groups": [
+          {
+            "group": "Introduction",
+            "pages": ["hip-3/index"]
+          },
+          {
+            "group": "REST API",
+            "openapi": "hip-3/openapi-rest.json",
+            "pages": [
+              {
+                "group": "Analytics",
+                "pages": [
+                  "GET /hip3/overview",
+                  "GET /hip3/top-movers",
+                  "GET /hip3/leaderboard",
+                  "GET /hip3/stats/traders"
+                ]
+              },
+              {
+                "group": "DEXs",
+                "pages": [
+                  "GET /hip3/dexs",
+                  "GET /hip3/dexs/{dex_id}"
+                ]
+              },
+              {
+                "group": "Assets",
+                "pages": [
+                  "GET /hip3/assets",
+                  "GET /hip3/assets/{ticker}"
+                ]
+              },
+              {
+                "group": "Auctions",
+                "pages": [
+                  "GET /hip3/auctions",
+                  "GET /hip3/auctions/current",
+                  "GET /hip3/auctions/history"
+                ]
+              },
+              {
+                "group": "Market Data",
+                "pages": [
+                  "GET /hip3/snapshots",
+                  "GET /hip3/ohlcv",
+                  "GET /hip3/oracle/stats"
+                ]
+              },
+              {
+                "group": "Fills",
+                "pages": [
+                  "GET /hip3/fills"
+                ]
+              },
+              {
+                "group": "Users",
+                "pages": [
+                  "GET /hip3/users/{address}/overview",
+                  "GET /hip3/users/{address}/fills",
+                  "GET /hip3/users/{address}/coins"
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "EVM",
+        "groups": [
+          {
+            "group": "Introduction",
+            "pages": ["evm/index"]
+          },
+          {
+            "group": "REST API",
+            "openapi": "evm/openapi-rest.json",
+            "pages": [
+              {
+                "group": "Stats",
+                "pages": [
+                  "GET /evm/stats",
+                  "GET /evm/stats/daily"
+                ]
+              },
+              {
+                "group": "Blocks",
+                "pages": [
+                  "GET /evm/blocks",
+                  "GET /evm/blocks/{block_number}"
+                ]
+              },
+              {
+                "group": "Transactions",
+                "pages": [
+                  "GET /evm/transactions",
+                  "GET /evm/blocks/{block_number}/transactions"
+                ]
+              },
+              {
+                "group": "Logs",
+                "pages": [
+                  "GET /evm/logs"
+                ]
+              },
+              {
+                "group": "Ledger",
+                "pages": [
+                  "GET /evm/ledger/transfers",
+                  "GET /evm/user/{address}/ledger-events",
+                  "GET /evm/user/{address}/ledger-summary"
+                ]
+              },
+              {
+                "group": "Bridge",
+                "pages": [
+                  "GET /evm/bridge/events"
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "Builders",
+        "groups": [
+          {
+            "group": "Introduction",
+            "pages": ["builders/index"]
+          },
+          {
+            "group": "REST API",
+            "openapi": "builders/openapi-rest.json",
+            "pages": [
+              {
+                "group": "Rankings",
+                "pages": [
+                  "GET /builders/top",
+                  "GET /builders/list"
+                ]
+              },
+              {
+                "group": "Stats",
+                "pages": [
+                  "GET /builders/stats",
+                  "GET /builders/stats/all-timeframes",
+                  "GET /builders/{builder_address}/stats"
+                ]
+              },
+              {
+                "group": "Users",
+                "pages": [
+                  "GET /builders/{builder_address}/users"
+                ]
+              }
             ]
           }
         ]

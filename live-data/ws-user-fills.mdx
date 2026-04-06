@@ -4,4 +4,8 @@ description: Per-user fills — snapshot then live updates over the same WebSock
 openapi-schema: "live-data/openapi-websocket.json UserFillsSnapshot"
 ---
 
+<Note>
+  **Connection:** `wss://api.hypedexer.com/ws?mode=mirror` — the `?mode=mirror` parameter is required.
+</Note>
+
 Subscribe with `{"method":"subscribe","subscription":{"type":"userFills","user":"0x..."}}` (optional `aggregateByTime`). Initial payload matches **`UserFillsSnapshot`**; subsequent events use **`UserFillsUpdate`** in `components/schemas` of the same OpenAPI file.

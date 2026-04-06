@@ -8,7 +8,7 @@ HypeDexer applies **per-token** and **per-IP** rate limiting to ensure fair use 
 
 ## Pricing
 
-> **Request access** We’re onboarding a limited set of builders while the dashboard is finalized.\
+> **Request access** We're onboarding a limited set of builders while the dashboard is finalized.\
 > **Telegram (DM):** [@enigma\_validator](https://t.me/enigma_validator)\
 > **Telegram (Group):** [@](Hypedexer)[hypedexer](https://t.me/c/EnigmaValidatorCommunity/1)\
 > **Email:** [contact@hypedexer.com](mailto:contact@hypedexer.com)
@@ -59,12 +59,13 @@ Defaults & caps: default `limit` **100** · per-request cap `size_multiplier ≤
 - **Per-plan caps:** see the **WebSocket** column in the pricing table above.
 - **Best practice:** multiplex many **subscriptions** on a few **connections**; use backoff, heartbeats, and batch subscribe/unsubscribe.
 
-## Regions & endpoints
+## Endpoint
 
 ```text
-EU: https://api-eu.hypedexer.com
-JP: https://api-jp.hypedexer.com
+https://api.hypedexer.com
 ```
+
+Requests are automatically routed to the nearest region (EU or JP) via a global load balancer.
 
 ---
 

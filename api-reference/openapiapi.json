@@ -7,7 +7,7 @@
   },
   "servers": [
     {
-      "url": "https://api-eu.hypedexer.com",
+      "url": "https://api.hypedexer.com",
       "description": "EU production"
     }
   ],

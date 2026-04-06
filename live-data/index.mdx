@@ -1,10 +1,12 @@
 ---
 title: Live data
-description: Real-time Hyperliquid data — REST
+description: Real-time Hyperliquid data — REST & WebSocket
 ---
 
 # Live data
 
-**Live data** is served by **REST** — `POST /info` on the api host with typed JSON bodies (`metaAndAssetCtxs`, `allMids`, fills, order books, proxied HL types, etc.).
+Reproduced Hyperliquid endpoints served through our own infrastructure for stable, low-latency access — ideal for market makers and latency-sensitive applications.
 
-For **indexed / historical** queries use the **Historical data** tab.
+**REST** is served via `POST /info` on the API host with typed JSON bodies (`metaAndAssetCtxs`, `allMids`, fills, order books, proxied HL types, etc.). **WebSocket** streams are available via `wss://api.hypedexer.com/ws?mode=mirror`.
+
+For **indexed** queries use the **Indexed Data** tab.

@@ -4,4 +4,8 @@ description: L4 raw order book — snapshot then updates for one coin
 openapi-schema: "live-data/openapi-websocket.json L4BookSnapshot"
 ---
 
+<Note>
+  **Connection:** `wss://api.hypedexer.com/ws?mode=mirror` — the `?mode=mirror` parameter is required.
+</Note>
+
 Subscribe with `{"method":"subscribe","subscription":{"type":"l4Book","coin":"BTC"}}`. Initial payload matches **`L4BookSnapshot`**; updates use **`L4BookUpdate`**.

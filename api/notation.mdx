@@ -11,7 +11,7 @@ We aim for clarity and consistency, though future versions (v1+) may revise or s
 | `Px`         | Price           | The price of the asset. |
 | `Sz`         | Size            | The amount of the asset in its base unit (coin). |
 | `Side`       | Side             | Side of trade or book: `B` = Bid / Buy, `A` = Ask / Sell (short). (It indicates the aggressing side for trades.) |
-| `Asset`      | Asset             | An integer identifier representing the asset being traded (see “Asset IDs” section). |
+| `Asset`      | Asset             | An integer identifier representing the asset being traded (see "Asset IDs" section). |
 | `Tif`        | Time in Force    | Order execution policy: e.g. `GTC` = good-until-canceled, `IOC` = immediate or cancel, `ALO` = add liquidity only (post only). |
 
 ---
@@ -22,7 +22,7 @@ Both **Spot** and **Perp** markets are indexed in the Hypedexer API, but they di
 
 | Attribute | **Spot** | **Perp (Perpetual)** |
 |------------|-----------|----------------------|
-| **Definition** | Direct exchange of assets (e.g., USDT ↔ BTC). | Derivative contract tracking an underlying asset’s price. |
+| **Definition** | Direct exchange of assets (e.g., USDT ↔ BTC). | Derivative contract tracking an underlying asset's price. |
 | **Settlement** | Immediate — actual tokens are exchanged. | No expiry — PnL is settled continuously. |
 | **Funding Rate** | ❌ Not applicable. | ✅ Periodic funding payments between longs and shorts. |
 | **Leverage** | ❌ Typically none. | ✅ Supported (variable by market). |
