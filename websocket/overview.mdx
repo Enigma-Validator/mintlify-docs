@@ -21,8 +21,8 @@ wss://api.hypedexer.com/ws
 
 ### Accounting (how WS usage is billed)
 
-- **Events → credits:** `5 delivered events = 1 weighted request` (rounded up per minute per connection).
-- WS events are **pooled** with REST credits in your monthly quota.
+- **Events → credits:** `10 delivered events = 1 credit` (rounded up per minute per connection).
+- WS events are **pooled** with REST credits in your quota (resets every 30 days from plan activation).
 - We may expose `X-WS-Delivered` headers/metrics later for transparency.
 - We reserve the right to adjust caps/weights with prior notice (see Changelog).
 

@@ -13,7 +13,7 @@ HypeDexer applies **per-token** and **per-IP** rate limiting to ensure fair use 
 > **Telegram (Group):** [@](Hypedexer)[hypedexer](https://t.me/c/EnigmaValidatorCommunity/1)\
 > **Email:** [contact@hypedexer.com](mailto:contact@hypedexer.com)
 
-| Plan | Price / month | REST included (weighted req/mo) | **WebSocket** (max conns / subs) | Link |
+| Plan | Price / month | REST included (credits/mo) | **WebSocket** (max conns / subs) | Link |
 | --- | --- | --: | --: | :-- |
 | **Free** | \$0 | 5000 | - | [Get Free](https://t.me/EnigmaValidatorCommunity/1) |
 | **Starter** | **\$249** | 500,000 | 4 / 5 | [Starter](https://t.me/EnigmaValidatorCommunity/1) |
@@ -25,37 +25,38 @@ HypeDexer applies **per-token** and **per-IP** rate limiting to ensure fair use 
 
 ## Quick limits
 
-- **Rate limit unit** = **weighted request** (REST).
-- **Heavy queries** cost more (see size multiplier).
-- **WebSocket** events are pooled with REST: **5 events = 1 weighted request**.
+- **Rate limit unit** = **credit**.
+- **REST:** every call costs at least **1 credit**; paginated responses cost **1 credit per 25 rows**.
+- **WebSocket:** **10 server→client events = 1 credit**.
+- **Errors** (HTTP status ≥ 400) are **free** — no credits are deducted.
 - **EU = JP** pricing & accounting (choose the closest region for latency).
 
-## REST details
+## REST credit consumption
 
 **429 response headers:** `Retry-After`, `X-RateLimit-Limit`, `X-RateLimit-Remaining`, `X-RateLimit-Reset`.
 
-**Weights by category**
-
-- **Historical (3):** `/fills/`
-- **Other (1):** for now, every other query uses the same weight
-
-**Result-size multiplier**\
-`request_weight = endpoint_weight × ceil(limit / 1000)`\
-Defaults & caps: default `limit` **100** · per-request cap `size_multiplier ≤ 10`.
-
-**Monthly quotas (reset 1st, 00:00 UTC)**
-
-| Plan | Included (weighted) / month | Overage |
+| Request type | Credit cost | Detail |
 | --- | --: | --- |
-| Free | 5000 | Not available (upgrade) |
+| Standard request | **1** credit | Minimum cost per call |
+| Paginated response | **1** credit per 25 rows | `Math.ceil(rowsCount / 25)`, minimum 1 |
+| Error response (status ≥ 400) | **0** credit | No charge on errors |
+
+**Monthly quotas (reset every 30 days from plan activation)**
+
+| Plan | Included credits / month | Overage |
+| --- | --: | --- |
+| Free | 5,000 (renews every 30 days) | Not available (upgrade) |
 | Starter | 500,000 | \$60 per additional 100k |
 | Growth | 3,000,000 | \$45 per additional 100k |
 | Scale | 12,500,000 | \$30 per additional 100k |
 | Enterprise | Unlimited (fair use) | No overage (contract) |
 
-## WebSocket details
+## WebSocket credit consumption
 
-- **Billing:** `10 delivered events = 1 weighted request` (rounded up per minute per connection).
+| Type | Credit cost | Detail |
+| --- | --: | --- |
+| Event batch | **1** credit per batch | 1 batch = **10** server→client events (`WS_EVENTS_PER_CREDIT = 10`) |
+
 - **Per-plan caps:** see the **WebSocket** column in the pricing table above.
 - **Best practice:** multiplex many **subscriptions** on a few **connections**; use backoff, heartbeats, and batch subscribe/unsubscribe.
 

@@ -53,7 +53,7 @@ https://api.hypedexer.com
 - Backpressure: if you can't keep up, drop or throttle rather than buffer indefinitely.
 - Heartbeat: handle `ping/pong;` reconnect with jittered backoff.
 - Resubscribe after reconnect; consider a quick REST snapshot to avoid gaps.
-- Billing: by default, 100 delivered events = 1 weighted request (pooled with REST).
+- Billing: **10 delivered events = 1 credit** (pooled with REST).
 
 ### Caching & idempotency
 
