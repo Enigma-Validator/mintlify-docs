@@ -325,6 +325,7 @@
           "Fills"
         ],
         "summary": "User fills (All = Spot + Perp)",
+        "description": "Returns user fills. By default, only recent data (from March 2025 onward) is available. Historical data prior to March 2025 is exclusively available on Scale & Enterprise plans via the `start_time` / `end_time` parameters. This is currently the only endpoint supporting pre-March historical access.",
         "parameters": [
           {
             "name": "user_address",
@@ -338,18 +339,26 @@
           {
             "name": "start_time",
             "in": "query",
+            "required": false,
             "schema": {
               "type": "string",
-              "format": "date-time"
-            }
+              "format": "date-time",
+              "nullable": true
+            },
+            "description": "Start time (ISO UTC). Required for Scale/Enterprise historical access. Overrides time_range.",
+            "example": "2025-01-01T00:00:00"
           },
           {
             "name": "end_time",
             "in": "query",
+            "required": false,
             "schema": {
               "type": "string",
-              "format": "date-time"
-            }
+              "format": "date-time",
+              "nullable": true
+            },
+            "description": "End time (ISO UTC). Defaults to now if start_time is set.",
+            "example": "2025-03-22T00:00:00"
           },
           {
             "name": "coin",
@@ -361,11 +370,14 @@
           {
             "name": "limit",
             "in": "query",
+            "required": false,
             "schema": {
               "type": "integer",
+              "default": 100,
               "minimum": 1,
-              "maximum": 1000
-            }
+              "maximum": 10000
+            },
+            "description": "Max results (cap 10000)"
           },
           {
             "name": "cursor",

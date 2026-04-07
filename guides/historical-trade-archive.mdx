@@ -27,12 +27,18 @@ This dataset is provided freely as a public good for the Hyperliquid ecosystem â
 
 ## For Scale & Enterprise users
 
+Historical data (prior to March 2025) is **exclusively available on Scale & Enterprise plans**.
+
 If your project requires:
 
-- **Programmatic access** to the full archive via API
+- **Programmatic access** to the full archive via API â€” use the `start_time` / `end_time` parameters on [`/fills/user/{user_address}`](/api-reference/fills/user-fills-all--spot--perp) to query historical fills
 - **Custom time ranges** or filtered exports
 - **Ongoing incremental updates** integrated into your pipeline
 - **Dedicated support** for data ingestion
+
+<Note>
+  `/fills/user/{user_address}` is currently the only endpoint supporting historical data access before March 2025. More endpoints will be added over time.
+</Note>
 
 Contact us to discuss your requirements. We work directly with teams that need production-grade access to this dataset.
 
